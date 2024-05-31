@@ -26,6 +26,7 @@ jobs:
           pr_urls=$(gh search prs label:dependencies --state open --json 'url' --repo ${{ github.repository }} | jq -c '[.[].url]')
           echo "pr_urls=${pr_urls}"
           if [ -z "${pr_urls}" ]; then pr_urls="[\"https://example.com\"]"; fi
+          echo "pr_urls=${pr_urls}"
           echo "pr_urls=${pr_urls}" >> $GITHUB_OUTPUT
 
   process_prs:
