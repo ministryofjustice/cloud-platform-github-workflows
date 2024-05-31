@@ -59,4 +59,5 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: |
+          if [ ${{ matrix.url }} == "https://example.com" ]; then exit 0; fi
           gh pr edit ${{ matrix.url }} --add-project 'Cloud Platform'
