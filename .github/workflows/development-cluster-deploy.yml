@@ -48,7 +48,7 @@ jobs:
         - name: Setup Terraform
           uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
           with:
-            terraform_version: 1.12.2
+            terraform_version: 1.14.3
         - run: terraform fmt -check
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
           continue-on-error: true
@@ -66,4 +66,3 @@ jobs:
             set -o pipefail
             terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
-          
