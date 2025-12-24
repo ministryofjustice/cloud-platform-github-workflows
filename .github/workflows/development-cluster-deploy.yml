@@ -56,3 +56,5 @@ jobs:
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
         - run: terraform validate -no-color
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        - run: terraform plan
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/network
