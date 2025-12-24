@@ -56,7 +56,14 @@ jobs:
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
         - run: terraform validate -no-color
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
-        - run: |
+        - name: Terraform Plan
+          run: |
             set -o pipefail
             terraform plan | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        - name: Terraform Apply
+          run: |
+            set -o pipefail
+            terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+          
