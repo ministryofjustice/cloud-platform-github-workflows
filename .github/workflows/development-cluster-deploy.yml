@@ -1,10 +1,11 @@
 ---
 name: Development Cluster Deployment
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - ".github/workflows/development-cluster-deploy.yml"
+  # Uncomment for testing on pull requests
+  # pull_request:
+  #   types: [opened, synchronize, reopened]
+  #   paths:
+  #     - ".github/workflows/development-cluster-deploy.yml"
   workflow_dispatch:
     inputs:
       cluster_action:
@@ -28,7 +29,7 @@ permissions:
 jobs:
   deploy-development-cluster:
     name: Deploy Development Cluster
-    # if: inputs.cluster_action == 'deploy'
+    if: inputs.cluster_action == 'deploy'
     runs-on: ubuntu-latest
     steps:
         - name: Checkout Repository
