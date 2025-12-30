@@ -50,24 +50,47 @@ jobs:
           uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
           with:
             terraform_version: 1.14.3
-        - run: terraform fmt -check
+        - name: Network Terraform fmt
+          run: terraform fmt -check
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
           continue-on-error: true
-        - run: terraform init
+        - name: Network Terraform init
+          run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
-        - run: terraform validate -no-color
+        - name: Network Terraform validate
+          run: terraform validate -no-color
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
-        - name: Terraform Plan
+        - name: Network Terraform Plan
           run: |
             set -o pipefail
             terraform plan | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
-        - name: Terraform Apply
+        - name: Network Terraform Apply
           run: |
             set -o pipefail
             terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
-
+        - name: Cluster Terraform fmt
+          run: terraform fmt -check
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+          continue-on-error: true
+        - name: Cluster Terraform init
+          run: terraform init
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        - name: Cluster Terraform validate
+          run: terraform validate -no-color
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        - name: Cluster Terraform Plan
+          run: |
+            set -o pipefail
+            terraform plan | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        - name: Cluster Terraform Apply
+          run: |
+            set -o pipefail
+            terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+  
   destroy-development-cluster:
     name: Destroy Development Cluster
     if: inputs.cluster_action == 'destroy' && inputs.cluster_name != 'cp-date-time'
@@ -91,10 +114,19 @@ jobs:
           uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
           with:
             terraform_version: 1.14.3
-        - run: terraform init
+        - name: Network Terraform init
+          run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
-        - name: Terraform Destroy
+        - name: Network Terraform Destroy
           run: |
             set -o pipefail
             terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        - name: Cluster Terraform init
+          run: terraform init
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        - name: Cluster Terraform Destroy
+          run: |
+            set -o pipefail
+            terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
