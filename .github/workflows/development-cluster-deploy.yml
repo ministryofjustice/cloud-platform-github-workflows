@@ -27,9 +27,25 @@ permissions:
   contents: read  # This is required for actions/checkout
 
 jobs:
+  set-cluster-name:
+    name: Set Cluster Name
+    if: inputs.cluster_action == 'deploy'
+    runs-on: ubuntu-latest
+    outputs:
+      cluster_name: ${{ steps.set-cluster-name.outputs.cluster_name }}
+    steps:
+      - name: Set Cluster Name Output
+        id: set-cluster-name
+        run: |
+          if [[ "${{ inputs.cluster_name }}" != "cp-date-time" ]]; then
+            echo "cluster_name=${{ inputs.cluster_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "cluster_name=cp-$(date +%d%m-%H%M)" >> $GITHUB_OUTPUT
+          fi
   deploy-development-cluster:
     name: Deploy Development Cluster
     if: inputs.cluster_action == 'deploy'
+    needs: set-cluster-name
     runs-on: ubuntu-latest
     steps:
         - name: Checkout Repository
@@ -39,7 +55,7 @@ jobs:
             ref: 'feature/add-dev-cluster-script'
         - name: Prepare Files
           run: |
-            bash terraform/environments/cloud-platform-non-live/scripts/dev-cluster-files.sh
+            bash terraform/environments/cloud-platform-non-live/scripts/dev-cluster-files.sh ${{ needs.set-cluster-name.outputs.cluster_name }}
         - name: Configure AWS Credentials
           uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
           with:
