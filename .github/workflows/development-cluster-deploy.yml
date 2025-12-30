@@ -114,14 +114,6 @@ jobs:
           uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
           with:
             terraform_version: 1.14.3
-        - name: Network Terraform init
-          run: terraform init
-          working-directory: terraform/environments/cloud-platform-non-live/tmp/network
-        - name: Network Terraform Destroy
-          run: |
-            set -o pipefail
-            terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
-          working-directory: terraform/environments/cloud-platform-non-live/tmp/network
         - name: Cluster Terraform init
           run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
@@ -130,3 +122,11 @@ jobs:
             set -o pipefail
             terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        - name: Network Terraform init
+          run: terraform init
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        - name: Network Terraform Destroy
+          run: |
+            set -o pipefail
+            terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/network
