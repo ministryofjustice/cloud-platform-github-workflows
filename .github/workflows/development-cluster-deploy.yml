@@ -38,10 +38,12 @@ jobs:
         id: set-cluster-name
         run: |
           if [[ "${{ inputs.cluster_name }}" != "cp-date-time" ]]; then
-            echo "cluster_name=${{ inputs.cluster_name }}" >> $GITHUB_OUTPUT
+            CLUSTER_NAME="${{ inputs.cluster_name }}"
           else
-            echo "cluster_name=cp-$(date +%d%m-%H%M)" >> $GITHUB_OUTPUT
+            CLUSTER_NAME="cp-$(date +%d%m-%H%M)"
           fi
+          echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
+          echo "Cluster Name: $CLUSTER_NAME"
   deploy-development-cluster:
     name: Deploy Development Cluster
     if: inputs.cluster_action == 'deploy'
