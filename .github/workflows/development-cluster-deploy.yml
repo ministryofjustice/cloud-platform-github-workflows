@@ -17,7 +17,7 @@ on:
           - deploy
           - destroy
       cluster_name:
-        description: "Name of the development cluster to destroy"
+        description: "Name of the development cluster"
         required: false
         default: "cp-date-time"
         type: string
@@ -44,6 +44,7 @@ jobs:
           fi
           echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
           echo "Cluster Name: $CLUSTER_NAME"
+
   deploy-development-cluster:
     name: Deploy Development Cluster
     if: inputs.cluster_action == 'deploy'
@@ -117,7 +118,6 @@ jobs:
           uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
           with:
             repository: 'ministryofjustice/modernisation-platform-environments'
-            ref: 'feature/add-dev-cluster-script'
         - name: Prepare Files
           run: |
             bash terraform/environments/cloud-platform-non-live/scripts/dev-cluster-files.sh ${{ inputs.cluster_name }}
