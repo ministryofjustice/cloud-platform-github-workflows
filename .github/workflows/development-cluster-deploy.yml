@@ -1,7 +1,7 @@
 ---
 name: Development Cluster Deployment
 on:
-  # Uncomment for testing on pull requests
+  # Uncomment for testing on pull requests, you will also need to change the github-actions-development-cluster role trust policy from repo:ministryofjustice/cloud-platform-github-workflows:ref:refs/heads/main to repo:ministryofjustice/cloud-platform-github-workflows:ref:refs/heads/feature/my-branch
   # pull_request:
   #   types: [opened, synchronize, reopened]
   #   paths:
@@ -54,7 +54,6 @@ jobs:
           uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
           with:
             repository: 'ministryofjustice/modernisation-platform-environments'
-            ref: 'feature/add-dev-cluster-script'
         - name: Prepare Files
           run: |
             bash terraform/environments/cloud-platform-non-live/scripts/dev-cluster-files.sh ${{ needs.set-cluster-name.outputs.cluster_name }}
