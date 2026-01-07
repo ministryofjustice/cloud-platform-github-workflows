@@ -17,7 +17,7 @@ on:
           - deploy
           - destroy
       cluster_name:
-        description: "Name of the development cluster"
+        description: "Name of the development cluster (must be 12 characters or less). Use 'cp-date-time' to auto-generate a name based on the current date and time."
         required: false
         default: "cp-date-time"
         type: string
@@ -44,6 +44,7 @@ jobs:
         run: |
           if [[ "${{ inputs.cluster_name }}" != "cp-date-time" ]]; then
             CLUSTER_NAME="${{ inputs.cluster_name }}"
+            CLUSTER_NAME="${CLUSTER_NAME:0:12}"
           else
             CLUSTER_NAME="cp-$(date +%d%m-%H%M)"
           fi
