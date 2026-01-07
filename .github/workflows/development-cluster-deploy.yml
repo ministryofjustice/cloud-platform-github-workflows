@@ -21,6 +21,11 @@ on:
         required: false
         default: "cp-date-time"
         type: string
+      branch_name:
+        description: "Name of the branch to deploy from (defaults to main)"
+        required: false
+        default: "main"
+        type: string
 
 permissions:
   id-token: write  # This is required for requesting the JWT
@@ -55,6 +60,7 @@ jobs:
           uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
           with:
             repository: 'ministryofjustice/modernisation-platform-environments'
+            ref: ${{ inputs.branch_name }}
         - name: Prepare Files
           run: |
             bash terraform/environments/cloud-platform-non-live/scripts/dev-cluster-files.sh ${{ needs.set-cluster-name.outputs.cluster_name }}
