@@ -62,59 +62,97 @@ jobs:
           with:
             repository: 'ministryofjustice/modernisation-platform-environments'
             ref: ${{ inputs.branch_name }}
+        
         - name: Prepare Files
           run: |
             bash terraform/environments/cloud-platform-non-live/scripts/dev-cluster-files.sh ${{ needs.set-cluster-name.outputs.cluster_name }}
+        
         - name: Configure AWS Credentials
           uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
           with:
             role-to-assume: arn:aws:iam::${{secrets.CLOUD_PLATFORM_NON_LIVE_DEVELOPMENT_ACCOUNT_ID}}:role/github-actions-development-cluster
             role-session-name: GitHubActionsDevelopmentClusterSession
             aws-region: eu-west-2
+        
         - name: Setup Terraform
           uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
           with:
             terraform_version: 1.14.3
+        
         - name: Network Terraform fmt
           run: terraform fmt -check
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
           continue-on-error: true
+        
         - name: Network Terraform init
           run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        
         - name: Network Terraform validate
           run: terraform validate -no-color
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        
         - name: Network Terraform Plan
           run: |
             set -o pipefail
             terraform plan | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        
         - name: Network Terraform Apply
           run: |
             set -o pipefail
             terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        
         - name: Cluster Terraform fmt
           run: terraform fmt -check
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
           continue-on-error: true
+        
         - name: Cluster Terraform init
           run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        
         - name: Cluster Terraform validate
           run: terraform validate -no-color
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        
         - name: Cluster Terraform Plan
           run: |
             set -o pipefail
             terraform plan | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        
         - name: Cluster Terraform Apply
           run: |
             set -o pipefail
             terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        
+        - name: Cluster-core Terraform fmt
+          run: terraform fmt -check
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+          continue-on-error: true
+        
+        - name: Cluster-core Terraform init
+          run: terraform init
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+        
+        - name: Cluster-core Terraform validate
+          run: terraform validate -no-color
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+        
+        - name: Cluster-core Terraform Plan
+          run: |
+            set -o pipefail
+            terraform plan | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+        
+        - name: Cluster-core Terraform Apply
+          run: |
+            set -o pipefail
+            terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
   
   destroy-development-cluster:
     name: Destroy Development Cluster
@@ -125,30 +163,47 @@ jobs:
           uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
           with:
             repository: 'ministryofjustice/modernisation-platform-environments'
+        
         - name: Prepare Files
           run: |
             bash terraform/environments/cloud-platform-non-live/scripts/dev-cluster-files.sh ${{ inputs.cluster_name }}
+        
         - name: Configure AWS Credentials
           uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
           with:
             role-to-assume: arn:aws:iam::${{secrets.CLOUD_PLATFORM_NON_LIVE_DEVELOPMENT_ACCOUNT_ID}}:role/github-actions-development-cluster
             role-session-name: GitHubActionsDevelopmentClusterSession
             aws-region: eu-west-2
+        
         - name: Setup Terraform
           uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
           with:
             terraform_version: 1.14.3
+        
+        - name: Cluster-core Terraform init
+          run: terraform init
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+        
+        - name: Cluster-core Terraform Destroy
+          run: |
+            set -o pipefail
+            terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+        
         - name: Cluster Terraform init
           run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        
         - name: Cluster Terraform Destroy
           run: |
             set -o pipefail
             terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        
         - name: Network Terraform init
           run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        
         - name: Network Terraform Destroy
           run: |
             set -o pipefail
