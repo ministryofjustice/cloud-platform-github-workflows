@@ -115,6 +115,26 @@ jobs:
             set -o pipefail
             terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        - name: Cluster-core Terraform fmt
+          run: terraform fmt -check
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+          continue-on-error: true
+        - name: Cluster-core Terraform init
+          run: terraform init
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+        - name: Cluster-core Terraform validate
+          run: terraform validate -no-color
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+        - name: Cluster-core Terraform Plan
+          run: |
+            set -o pipefail
+            terraform plan | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+        - name: Cluster-core Terraform Apply
+          run: |
+            set -o pipefail
+            terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
   
   destroy-development-cluster:
     name: Destroy Development Cluster
@@ -138,6 +158,14 @@ jobs:
           uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
           with:
             terraform_version: 1.14.3
+        - name: Cluster-core Terraform init
+          run: terraform init
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+        - name: Cluster-core Terraform Destroy
+          run: |
+            set -o pipefail
+            terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
         - name: Cluster Terraform init
           run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
