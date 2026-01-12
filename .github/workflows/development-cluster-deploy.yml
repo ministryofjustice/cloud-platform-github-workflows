@@ -80,15 +80,15 @@ jobs:
         - name: Network Terraform init
           run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/network
-        
-        - name: Network Terraform validate
-          run: terraform validate -no-color
-          working-directory: terraform/environments/cloud-platform-non-live/network
-        
+
         - name: Network Terraform workspace
           run: terraform workspace select ${{ needs.set-cluster-name.outputs.cluster_name }} || terraform workspace new ${{ needs.set-cluster-name.outputs.cluster_name }}
           working-directory: terraform/environments/cloud-platform-non-live/network
-        
+
+        - name: Network Terraform validate
+          run: terraform validate -no-color
+          working-directory: terraform/environments/cloud-platform-non-live/network
+
         - name: Network Terraform Plan
           run: |
             set -o pipefail
@@ -110,12 +110,12 @@ jobs:
           run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/cluster
         
-        - name: Cluster Terraform validate
-          run: terraform validate -no-color
-          working-directory: terraform/environments/cloud-platform-non-live/cluster
-        
         - name: Cluster Terraform workspace
           run: terraform workspace select ${{ needs.set-cluster-name.outputs.cluster_name }} || terraform workspace new ${{ needs.set-cluster-name.outputs.cluster_name }}
+          working-directory: terraform/environments/cloud-platform-non-live/cluster
+
+        - name: Cluster Terraform validate
+          run: terraform validate -no-color
           working-directory: terraform/environments/cloud-platform-non-live/cluster
 
         - name: Cluster Terraform Plan
@@ -138,13 +138,13 @@ jobs:
         - name: Cluster-core Terraform init
           run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/cluster-core
-        
-        - name: Cluster-core Terraform validate
-          run: terraform validate -no-color
-          working-directory: terraform/environments/cloud-platform-non-live/cluster-core
 
         - name: Cluster-core Terraform workspace
           run: terraform workspace select ${{ needs.set-cluster-name.outputs.cluster_name }} || terraform workspace new ${{ needs.set-cluster-name.outputs.cluster_name }}
+          working-directory: terraform/environments/cloud-platform-non-live/cluster-core
+
+        - name: Cluster-core Terraform validate
+          run: terraform validate -no-color
           working-directory: terraform/environments/cloud-platform-non-live/cluster-core
 
         - name: Update kube config
