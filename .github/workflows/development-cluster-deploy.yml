@@ -1,11 +1,6 @@
 ---
 name: Development Cluster Deployment
 on:
-  # Uncomment for testing on pull requests, you will also need to change the github-actions-development-cluster role trust policy from repo:ministryofjustice/cloud-platform-github-workflows:ref:refs/heads/main to repo:ministryofjustice/cloud-platform-github-workflows:ref:refs/heads/feature/my-branch
-  # pull_request:
-  #   types: [opened, synchronize, reopened]
-  #   paths:
-  #     - ".github/workflows/development-cluster-deploy.yml"
   workflow_dispatch:
     inputs:
       cluster_action:
@@ -22,7 +17,7 @@ on:
         default: "cp-date-time"
         type: string
       branch_name:
-        description: "Name of the branch to deploy from (defaults to main)"
+        description: "Name of the branch in MP environments repo to deploy from (defaults to main)"
         required: false
         default: "main"
         type: string
@@ -31,7 +26,7 @@ permissions:
   id-token: write  # This is required for requesting the JWT
   contents: read  # This is required for actions/checkout
 
-run-name: "Development Cluster Deployment by @${{ github.actor }}"
+run-name: "Development Cluster ${{ inputs.cluster_action }} by @${{ github.actor }}"
 
 jobs:
   set-cluster-name:
@@ -94,6 +89,10 @@ jobs:
           run: terraform validate -no-color
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
         
+        - name: Network Terraform workspace
+          run: terraform workspace select ${{ needs.set-cluster-name.outputs.cluster_name }} || terraform workspace new ${{ needs.set-cluster-name.outputs.cluster_name }}
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        
         - name: Network Terraform Plan
           run: |
             set -o pipefail
@@ -117,6 +116,10 @@ jobs:
         
         - name: Cluster Terraform validate
           run: terraform validate -no-color
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        
+        - name: Cluster Terraform workspace
+          run: terraform workspace select ${{ needs.set-cluster-name.outputs.cluster_name }} || terraform workspace new ${{ needs.set-cluster-name.outputs.cluster_name }}
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
 
         - name: Cluster Terraform Plan
@@ -144,13 +147,17 @@ jobs:
           run: terraform validate -no-color
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
 
+        - name: Cluster-core Terraform workspace
+          run: terraform workspace select ${{ needs.set-cluster-name.outputs.cluster_name }} || terraform workspace new ${{ needs.set-cluster-name.outputs.cluster_name }}
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+
         - name: Update kube config
           run: |
-            aws eks --region eu-west-2 update-kubeconfig --name ${{ inputs.cluster_name }}
+            aws eks --region eu-west-2 update-kubeconfig --name ${{ needs.set-cluster-name.outputs.cluster_name }}
 
         - name: Check kube config
           run: |
-            kubectl config current-context || true 
+            kubectl config current-context || true
 
         - name: Cluster-core Terraform Plan
           run: |
@@ -194,7 +201,11 @@ jobs:
         - name: Cluster-core Terraform init
           run: terraform init
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
-          
+        
+        - name: Cluster-core Terraform workspace select
+          run: terraform workspace select ${{ inputs.cluster_name }}
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+       
         - name: Update kube config
           run: |
             aws eks --region eu-west-2 update-kubeconfig --name ${{ inputs.cluster_name }}
@@ -209,8 +220,18 @@ jobs:
             terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
         
+        - name: Cluster-core Terraform workspace delete
+          run: |
+            terraform workspace select default
+            terraform workspace delete ${{ inputs.cluster_name }}
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster-core
+        
         - name: Cluster Terraform init
           run: terraform init
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        
+        - name: Cluster Terraform workspace select
+          run: terraform workspace select ${{ inputs.cluster_name }}
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
         
         - name: Cluster Terraform Destroy
@@ -219,12 +240,28 @@ jobs:
             terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
         
+        - name: Cluster Terraform workspace delete
+          run: |
+            terraform workspace select default
+            terraform workspace delete ${{ inputs.cluster_name }}
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/cluster
+        
         - name: Network Terraform init
           run: terraform init
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        
+        - name: Network Terraform workspace select
+          run: terraform workspace select ${{ inputs.cluster_name }}
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
         
         - name: Network Terraform Destroy
           run: |
             set -o pipefail
             terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform-non-live/tmp/network
+        
+        - name: Network Terraform workspace delete
+          run: |
+            terraform workspace select default
+            terraform workspace delete ${{ inputs.cluster_name }}
           working-directory: terraform/environments/cloud-platform-non-live/tmp/network
