@@ -201,9 +201,6 @@ jobs:
     if: inputs.cluster_action == 'destroy' && inputs.cluster_name != 'cp-date-time'
     runs-on: ubuntu-latest
     steps:
-        - name: Cluster name
-          run: echo ${{ steps.set-cluster-name.outputs.cluster_name }}
-
         - name: Checkout Repository
           uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
           with:
