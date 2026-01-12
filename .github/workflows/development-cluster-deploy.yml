@@ -92,13 +92,13 @@ jobs:
         - name: Network Terraform Plan
           run: |
             set -o pipefail
-            terraform plan | ../../../../../scripts/redact-output.sh
+            terraform plan | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/network
         
         - name: Network Terraform Apply
           run: |
             set -o pipefail
-            terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
+            terraform apply -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/network
         
         - name: Cluster Terraform fmt
@@ -121,13 +121,13 @@ jobs:
         - name: Cluster Terraform Plan
           run: |
             set -o pipefail
-            terraform plan | ../../../../../scripts/redact-output.sh
+            terraform plan | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/cluster
         
         - name: Cluster Terraform Apply
           run: |
             set -o pipefail
-            terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
+            terraform apply -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/cluster
         
         - name: Cluster-core Terraform fmt
@@ -158,13 +158,13 @@ jobs:
         - name: Cluster-core Terraform Plan
           run: |
             set -o pipefail
-            terraform plan | ../../../../../scripts/redact-output.sh
+            terraform plan | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/cluster-core
         
         - name: Cluster-core Terraform Apply
           run: |
             set -o pipefail
-            terraform apply -auto-approve | ../../../../../scripts/redact-output.sh
+            terraform apply -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/cluster-core
   
   destroy-development-cluster:
@@ -213,7 +213,7 @@ jobs:
         - name: Cluster-core Terraform Destroy
           run: |
             set -o pipefail
-            terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
+            terraform destroy -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/cluster-core
         
         - name: Cluster-core Terraform workspace delete
@@ -233,7 +233,7 @@ jobs:
         - name: Cluster Terraform Destroy
           run: |
             set -o pipefail
-            terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
+            terraform destroy -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/cluster
         
         - name: Cluster Terraform workspace delete
@@ -253,7 +253,7 @@ jobs:
         - name: Network Terraform Destroy
           run: |
             set -o pipefail
-            terraform destroy -auto-approve | ../../../../../scripts/redact-output.sh
+            terraform destroy -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/network
         
         - name: Network Terraform workspace delete
