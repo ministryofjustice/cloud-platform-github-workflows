@@ -221,7 +221,7 @@ jobs:
 
         - name: Update kube config
           run: |
-            aws eks --region eu-west-2 update-kubeconfig --name ${{ inputs.cluster_name }}
+            aws eks --region eu-west-2 update-kubeconfig --name ${{ inputs.cluster_name }} || true
 
         - name: Check kube config
           run: |
