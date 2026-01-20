@@ -121,13 +121,13 @@ jobs:
         - name: Cluster Terraform Plan
           run: |
             set -o pipefail
-            terraform plan -var="created_by=${{ github.actor }}" | ../../../../scripts/redact-output.sh
+            terraform plan | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/cluster
 
         - name: Cluster Terraform Apply
           run: |
             set -o pipefail
-            terraform apply -var="created_by=${{ github.actor }}" -auto-approve | ../../../../scripts/redact-output.sh
+            terraform apply -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform-non-live/cluster
 
         - name: Cluster-core Terraform fmt
