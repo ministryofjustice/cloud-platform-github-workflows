@@ -2,15 +2,86 @@ name: Integration Tests
 
 on:
   workflow_dispatch:
+    inputs:
+      cluster_name:
+        description: "Name of the target cluster for integration test run"
+        required: true
+        type: string
+      branch_name:
+          description: "Name of integration tests repository branch to use"
+          required: false
+          default: "main"
+          type: string
+
+permissions:
+  id-token: write  # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+  checks: write  # This is required for publishing test reports
 
 jobs:
+  set-cluster-name:
+    name: Set Cluster Name
+    runs-on: ubuntu-latest
+    outputs:
+      cluster_name: ${{ steps.set-cluster-name.outputs.cluster_name }}
+    steps:
+      - name: Set Cluster Name Output
+        id: set-cluster-name
+        run: |
+          CLUSTER_NAME="${{ inputs.cluster_name }}"
+          CLUSTER_NAME="${CLUSTER_NAME:0:12}"
+          echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
+          echo "Cluster Name: $CLUSTER_NAME"
+
   integration-tests:
+     needs: set-cluster-name
      runs-on: ubuntu-latest
      steps:
-       - name: Checkout repository
-         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-         with:
-           repository: 'ministryofjustice/cloud-platform-integration-tests'
+         - name: Checkout repository
+           uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+           with:
+             repository: 'ministryofjustice/cloud-platform-integration-tests'
 
-       - name: Run integration tests
-         run: echo "Hello from integration tests workflow!"
+         - name: Configure AWS Credentials
+           uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+           with:
+              role-to-assume: arn:aws:iam::${{secrets.CLOUD_PLATFORM_NON_LIVE_DEVELOPMENT_ACCOUNT_ID}}:role/github-actions-development-cluster
+              role-session-name: GitHubActionsDevelopmentClusterSession
+              aws-region: eu-west-2
+
+         - name: Setup Go
+           uses: actions/setup-go@v5
+           with:
+             go-version: '1.25.4'
+
+         - name: Install Ginkgo CLI
+           run: go install github.com/onsi/ginkgo/v2/ginkgo@latest
+
+         - name: Add Go bin to PATH
+           run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+         - name: Update kube config
+           run: |
+            aws eks --region eu-west-2 update-kubeconfig --name ${{ needs.set-cluster-name.outputs.cluster_name }}
+
+         - name: Check kube config
+           run: |
+            kubectl config current-context || true
+         - name: Run integration tests
+           run: |
+             git checkout ${{ inputs.branch_name }}
+             cd ./test;  ginkgo -r -v --progress --output-interceptor-mode=none --junit-report=report.xml
+
+         - name: Upload test report
+           uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+           with:
+             name: ginkgo-junit-report
+             path: ./test/report.xml
+
+         - name: Publish test report
+           uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637 # v2.5.0
+           if: always()
+           with:
+             name: Integration Tests
+             path: ./test/report.xml
+             reporter: java-junit
