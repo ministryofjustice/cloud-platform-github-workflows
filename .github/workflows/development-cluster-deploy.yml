@@ -216,16 +216,20 @@ jobs:
           working-directory: terraform/environments/cloud-platform/cluster-components
 
         - name: Cluster-components Terraform workspace select
+          id: cluster-components-workspace-select
+          continue-on-error: true
           run: terraform workspace select ${{ inputs.cluster_name }}
           working-directory: terraform/environments/cloud-platform/cluster-components
 
         - name: Cluster-components Terraform Destroy
+          if: steps.cluster-components-workspace-select.outcome == 'success'
           run: |
             set -o pipefail
             terraform destroy -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster-components
 
         - name: Cluster-components Terraform workspace delete
+          if: steps.cluster-components-workspace-select.outcome == 'success'
           run: |
             terraform workspace select default
             terraform workspace delete ${{ inputs.cluster_name }}
@@ -236,16 +240,20 @@ jobs:
           working-directory: terraform/environments/cloud-platform/cluster-core
 
         - name: Cluster-core Terraform workspace select
+          id: cluster-core-workspace-select
+          continue-on-error: true
           run: terraform workspace select ${{ inputs.cluster_name }}
           working-directory: terraform/environments/cloud-platform/cluster-core
 
         - name: Cluster-core Terraform Destroy
+          if: steps.cluster-core-workspace-select.outcome == 'success'
           run: |
             set -o pipefail
             terraform destroy -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster-core
 
         - name: Cluster-core Terraform workspace delete
+          if: steps.cluster-core-workspace-select.outcome == 'success'
           run: |
             terraform workspace select default
             terraform workspace delete ${{ inputs.cluster_name }}
@@ -256,16 +264,20 @@ jobs:
           working-directory: terraform/environments/cloud-platform/cluster
 
         - name: Cluster Terraform workspace select
+          id: cluster-workspace-select
+          continue-on-error: true
           run: terraform workspace select ${{ inputs.cluster_name }}
           working-directory: terraform/environments/cloud-platform/cluster
 
         - name: Cluster Terraform Destroy
+          if: steps.cluster-workspace-select.outcome == 'success'
           run: |
             set -o pipefail
             terraform destroy -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster
 
         - name: Cluster Terraform workspace delete
+          if: steps.cluster-workspace-select.outcome == 'success'
           run: |
             terraform workspace select default
             terraform workspace delete ${{ inputs.cluster_name }}
