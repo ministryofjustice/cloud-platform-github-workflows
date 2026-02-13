@@ -1,0 +1,148 @@
+name: Cluster Reminder
+on:
+  schedule:
+    - cron: '0 10 * * 5' # Every Friday 10:00 AM
+  workflow_dispatch:
+
+env:
+  # Action versions and configuration
+  checkout_action: &checkout_action 'actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8' # v6.0.1
+  aws_credentials_action: &aws_credentials_action 'aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7' # v6.0.0
+  slack_notification_action: &slack_notification_action 'slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a' # v2.1.1
+  setup_go_action: &setup_go_action 'actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5' # v6.2.0
+  # Repository and ref for the test cluster reminder scripts
+  checkout_repository: 'ministryofjustice/cloud-platform-test-cluster-reminder'
+  checkout_repository_ref: '4e18692df1a7cc38b06e550fe5d5e60c06f13374'
+  aws_region: 'eu-west-2'
+
+
+
+jobs:
+  dev-reminder:
+    runs-on: ubuntu-latest
+    outputs:
+      message: ${{ steps.dev-reminder.outputs.message }}
+    steps:
+      - name: Checkout code
+        uses: *checkout_action
+        with: 
+          repository: ${{ env.checkout_repository }}
+          ref: ${{ env.checkout_repository_ref }}
+          fetch-depth: 0
+      - name: connect to AWS
+        uses: *aws_credentials_action
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_DEVELOPMENT }}
+          aws-region: ${{ env.aws_region }}
+      - name: setup Go
+        uses: *setup_go_action
+        with:
+          go-version: '1.26.x'
+      - name: run dev reminder script from cloud-platform-test-cluster-reminder
+        id: dev-reminder
+        run: go run ./scripts/test-cluster-reminder.go
+  
+  preproduction-reminder:
+    runs-on: ubuntu-latest
+    outputs:
+      message: ${{ steps.preproduction-reminder.outputs.message }}
+    steps:
+      - name: Checkout code
+        uses: *checkout_action
+        with: 
+          repository: ${{ env.checkout_repository }}
+          ref: ${{ env.checkout_repository_ref }}
+          fetch-depth: 0
+      - name: connect to AWS
+        uses: *aws_credentials_action
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_PREPRODUCTION }}
+          aws-region: ${{ env.aws_region }}
+      - name: setup Go
+        uses: *setup_go_action
+        with:
+          go-version: '1.26.x'
+      - name: run preproduction reminder script from cloud-platform-test-cluster-reminder
+        id: preproduction-reminder
+        run: |
+          msg="$(go run ./scripts/test-cluster-reminder.go)"
+          {
+            echo "message<<EOF"
+            echo "$msg"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+  
+  nonlive-reminder:
+    runs-on: ubuntu-latest
+    outputs:
+      message: ${{ steps.nonlive-reminder.outputs.message }}
+    steps:
+      - name: Checkout code
+        uses: *checkout_action
+        with: 
+          repository: ${{ env.checkout_repository }}
+          ref: ${{ env.checkout_repository_ref }}
+          fetch-depth: 0
+      - name: connect to AWS
+        uses: *aws_credentials_action
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_NONLIVE }}
+          aws-region: ${{ env.aws_region }}
+      - name: setup Go
+        uses: *setup_go_action
+        with:
+          go-version: '1.26.x'
+      - name: run nonlive reminder script from cloud-platform-test-cluster-reminder
+        id: nonlive-reminder
+        run: |
+          msg="$(go run ./scripts/test-cluster-reminder.go)"
+          {
+            echo "message<<EOF"
+            echo "$msg"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  live-reminder:
+    runs-on: ubuntu-latest
+    outputs:
+      message: ${{ steps.live-reminder.outputs.message }}
+    steps:
+      - name: Checkout code
+        uses: *checkout_action
+        with: 
+          repository: ${{ env.checkout_repository }}
+          ref: ${{ env.checkout_repository_ref }}
+          fetch-depth: 0
+      - name: connect to AWS
+        uses: *aws_credentials_action
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_LIVE }}
+          aws-region: ${{ env.aws_region }}
+      - name: setup Go
+        uses: *setup_go_action
+        with:
+          go-version: '1.26.x'
+      - name: run live reminder script from cloud-platform-test-cluster-reminder
+        id: live-reminder
+        run: |
+          msg="$(go run ./scripts/test-cluster-reminder.go)"
+          {
+            echo "message<<EOF"
+            echo "$msg"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+  
+  slack-notification:
+    runs-on: ubuntu-latest
+    needs: [dev-reminder, preproduction-reminder, nonlive-reminder, live-reminder]
+    steps:
+      - name: Send to Slack
+        uses: *slack_notification_action
+        with:
+          payload: |
+            {
+              "channel": "${{ secrets.SLACK_CHANNEL }}",
+              "text": "${{needs.dev-reminder.outputs.message}}\n\n${{needs.preproduction-reminder.outputs.message}}\n\n${{needs.nonlive-reminder.outputs.message}}\n\n${{needs.live-reminder.outputs.message}}"
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
