@@ -3,13 +3,7 @@ on:
   schedule:
     - cron: '0 10 * * 5' # Every Friday 10:00 AM
   workflow_dispatch:
-
-env:
-  checkout_action: &checkout_action 'actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8' # v6.0.1
-  aws_credentials_action: &aws_credentials_action 'aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7' # v6.0.0
-  slack_notification_action: &slack_notification_action 'slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a' # v2.1.1
-  aws_region: 'eu-west-2'
-
+    
 jobs:
   dev-cluster-reminder:
     runs-on: ubuntu-latest
@@ -19,15 +13,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: *checkout_action
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with: 
           fetch-depth: 0
       - name: connect to AWS
-        uses: *aws_credentials_action
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
         with:
           role-to-assume: arn:aws:iam::${{secrets.CLOUD_PLATFORM_DEVELOPMENT_ACCOUNT_ID}}:role/github-actions-cluster-reminder
           role-session-name: github-actions-cluster-reminder-dev
-          aws-region: ${{ env.aws_region }}
+          aws-region: eu-west-2
       - name: run development reminder
         id: dev-cluster-reminder
         run: |
@@ -40,7 +34,7 @@ jobs:
               ```$clustersToDelete```
           } >> $GITHUB_OUTPUT
       - name: Send to Slack
-        uses: *slack_notification_action
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
           payload: |
             {
