@@ -6,9 +6,6 @@
 
 accountClusters=("cloud-platform-development" "cloud-platform-preproduction" "cloud-platform-nonlive" "cloud-platform-live")
 
-scriptDir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-mkdir -p "$(dirname "$outputFile")"
-
 clusterList=$(aws eks list-clusters --region eu-west-2)
 accountAliases=$(aws iam list-account-aliases --region eu-west-2 | jq -r '.AccountAliases[]')
 

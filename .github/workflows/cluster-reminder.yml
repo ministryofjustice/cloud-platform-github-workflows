@@ -13,8 +13,10 @@ env:
 jobs:
   dev-cluster-reminder:
     runs-on: ubuntu-latest
-    outputs:
-      message: ${{ steps.dev-cluster-reminder.outputs.message }}
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
       - name: Checkout code
         uses: *checkout_action
@@ -29,7 +31,7 @@ jobs:
       - name: run development reminder
         id: dev-cluster-reminder
         run: |
-          msg=$(./scripts/cluster-reminder.bash)
+          msg="$(bash ./scripts/cluster-reminder.bash)"
           {
             "message": 
               $title\n
