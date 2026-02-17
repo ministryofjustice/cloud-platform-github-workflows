@@ -1,0 +1,45 @@
+name: Cluster Reminder
+on:
+  schedule:
+    - cron: '0 10 * * 5' # Every Friday 10:00 AM
+  workflow_dispatch:
+    
+jobs:
+  dev-cluster-reminder:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with: 
+          fetch-depth: 0
+      - name: connect to AWS
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
+        with:
+          role-to-assume: arn:aws:iam::${{secrets.CLOUD_PLATFORM_DEVELOPMENT_ACCOUNT_ID}}:role/github-actions-cluster-reminder
+          role-session-name: github-actions-cluster-reminder-dev
+          aws-region: eu-west-2
+      - name: run development reminder
+        id: dev-cluster-reminder
+        run: |
+          msg="$(bash ./scripts/cluster-reminder.bash)"
+          {
+            "message": 
+              $title\n
+              Account: $accountAliases\n
+              $clusters_msg\n
+              ```$clustersToDelete```
+          } >> $GITHUB_OUTPUT
+      - name: Send to Slack
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          payload: |
+            {
+              "text": "${{ steps.dev-cluster-reminder.outputs.message }}"
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.CP_SLACK_WEBHOOK_URL }}
