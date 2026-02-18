@@ -2,11 +2,13 @@ name: Cluster Reminder
 on:
   schedule:
     - cron: '0 10 * * 5' # Every Friday 10:00 AM
-  pull_request:
-    paths:
-      - 'scripts/cluster-reminder.bash'
-      - '.github/workflows/cluster-reminder.yml'
   workflow_dispatch:
+    inputs:
+      branch_name:
+        description: "Name of the branch from the workflow repo to deploy from (defaults to main)"
+        required: false
+        default: "main"
+        type: string
 
 permissions:
   id-token: write
@@ -17,7 +19,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with: 
+        with:
+          ref: ${{ inputs.branch_name }}
           fetch-depth: 0
       - name: connect to AWS
         uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
@@ -35,26 +38,13 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Send to Slack (PR)
-        if: github.event_name == 'pull_request'
+      - name: Send to Slack
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "PR test run:\n${{ steps.dev-cluster-reminder.outputs.message }}"
             }
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_WEBHOOK_URL: ${{ secrets.CP_SLACK_WEBHOOK_URL }}
-
-      - name: Send to Slack
-        if: github.event_name != 'pull_request'
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
-        with:
-          payload: |
-            {
-              "text": "${{ steps.dev-cluster-reminder.outputs.message }}"
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_WEBHOOK_URL: ${{ secrets.CP_SLACK_WEBHOOK_URL }}
