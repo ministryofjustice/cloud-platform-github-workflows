@@ -27,4 +27,8 @@ else
   clusters_msg="*Yay, there are no development clusters to cleanup!*"
 fi
 
-echo -e "$title\nAccount: $accountAliases\n$clusters_msg\n$clustersToDelete"
+echo -e "$title\nAccount: $accountAliases\n"
+echo -e "$clusters_msg\n"
+for cluster in $clustersToDelete; do
+  echo -e "- $cluster\n"
+done
