@@ -1,9 +1,10 @@
 name: Lint
 
-"on":
+on:
   pull_request:
     branches:
       - code-formatter
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -21,7 +22,7 @@ jobs:
       checkov_soft_fail: false
 
   auto-fix:
-    uses: ministryofjustice/cloud-platform-github-workflows/.github/workflows/code-fix.yml@main # TODO: replace @main with a pinned SHA e.g. @abc1234
+    uses: ministryofjustice/cloud-platform-github-workflows/.github/workflows/code-auto-fix.yml@main # TODO: replace @main with a pinned SHA e.g. @abc1234
     if: github.event_name == 'pull_request'
     permissions:
       contents: write
