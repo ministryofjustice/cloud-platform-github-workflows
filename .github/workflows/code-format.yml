@@ -1,0 +1,276 @@
+name: Code Lint
+
+on:
+  workflow_call:
+    inputs:
+      enable_terraform:
+        description: "Enable Terraform linting (tflint + fmt check) and security scanning (checkov)"
+        type: boolean
+        default: true
+      enable_yaml:
+        description: "Enable YAML linting"
+        type: boolean
+        default: true
+      enable_json:
+        description: "Enable JSON validation"
+        type: boolean
+        default: true
+      enable_markdown:
+        description: "Enable Markdown linting"
+        type: boolean
+        default: true
+      working_directory:
+        description: "Root directory to lint, relative to the repository root"
+        type: string
+        default: "."
+      tflint_config_file:
+        description: >
+          Path to a .tflint.hcl config file, relative to working_directory.
+          A built-in AWS-focused default is written if the file does not exist.
+        type: string
+        default: ".tflint.hcl"
+      validate_all_codebase:
+        description: >
+          Lint scope. 'auto' (default): changed files on pull_request events,
+          all files on every other event. 'true': always lint all files.
+          'false': always lint only changed files.
+        type: string
+        default: "auto"
+      checkov_minimum_severity:
+        description: "Minimum checkov severity to report (CRITICAL, HIGH, MEDIUM, LOW, INFO)"
+        type: string
+        default: "HIGH"
+      checkov_soft_fail:
+        description: "When true, checkov findings will not fail the workflow"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # Required to upload SARIF to the GitHub Security tab
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0 # Full history required for changed-file detection
+
+      - name: Resolve working directory
+        id: workdir
+        env:
+          INPUT_WD: ${{ inputs.working_directory }}
+        run: |
+          if [[ "$INPUT_WD" == "." || -z "$INPUT_WD" ]]; then
+            echo "path=${{ github.workspace }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=${{ github.workspace }}/$INPUT_WD" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Determine lint scope and collect target files
+        id: files
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          SCOPE: ${{ inputs.validate_all_codebase }}
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [[ "$SCOPE" == "true" ]]; then
+            validate_all=true
+          elif [[ "$SCOPE" == "false" ]]; then
+            validate_all=false
+          elif [[ "$EVENT_NAME" == "pull_request" || "$EVENT_NAME" == "pull_request_target" ]]; then
+            validate_all=false
+          else
+            validate_all=true
+          fi
+          echo "Lint scope: validate_all=$validate_all (event=$EVENT_NAME, input=$SCOPE)"
+
+          if [[ "$validate_all" == "true" ]]; then
+            tf_dirs=$(find . -name "*.tf" -not -path "./.git/*" -exec dirname {} \; 2>/dev/null | sort -u | tr '\n' ' ' || true)
+            yaml_files=$(find . \( -name "*.yml" -o -name "*.yaml" \) -not -path "./.git/*" 2>/dev/null | sed 's|^\./||' | tr '\n' ' ' || true)
+            json_files=$(find . -name "*.json" -not -path "./.git/*" 2>/dev/null | sed 's|^\./||' | tr '\n' ' ' || true)
+            md_files=$(find . -name "*.md" -not -path "./.git/*" 2>/dev/null | sed 's|^\./||' | tr '\n' ' ' || true)
+          else
+            base_ref="origin/$BASE_REF"
+            all_changed=$(git diff --name-only --diff-filter=d "${base_ref}...HEAD" 2>/dev/null || true)
+            tf_dirs=$(echo "$all_changed" | grep '\.tf$' | xargs -I{} dirname {} 2>/dev/null | sort -u | tr '\n' ' ' || true)
+            yaml_files=$(echo "$all_changed" | grep -E '\.(yml|yaml)$' | tr '\n' ' ' || true)
+            json_files=$(echo "$all_changed" | grep '\.json$' | tr '\n' ' ' || true)
+            md_files=$(echo "$all_changed" | grep '\.md$' | tr '\n' ' ' || true)
+          fi
+
+          tf_dirs="${tf_dirs%% }"
+          yaml_files="${yaml_files%% }"
+          json_files="${json_files%% }"
+          md_files="${md_files%% }"
+
+          echo "tf_dirs=$tf_dirs"       >> "$GITHUB_OUTPUT"
+          echo "yaml_files=$yaml_files" >> "$GITHUB_OUTPUT"
+          echo "json_files=$json_files" >> "$GITHUB_OUTPUT"
+          echo "md_files=$md_files"     >> "$GITHUB_OUTPUT"
+
+          echo "tf_dirs:    [$tf_dirs]"
+          echo "yaml_files: [$yaml_files]"
+          echo "json_files: [$json_files]"
+          echo "md_files:   [$md_files]"
+
+      # ── Terraform ──────────────────────────────────────────────────────────
+
+      - name: Write default tflint config
+        if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          TFLINT_CONFIG: ${{ inputs.tflint_config_file }}
+        run: |
+          config="$TFLINT_CONFIG"
+          if [[ -f "$config" ]]; then
+            echo "Using existing tflint config: $config"
+            exit 0
+          fi
+          mkdir -p "$(dirname "$config")"
+          cat > "$config" << 'TFLINT_EOF'
+          plugin "aws" {
+            enabled = true
+            version = "0.33.0"
+            source  = "github.com/terraform-linters/tflint-ruleset-aws"
+          }
+
+          rule "terraform_deprecated_interpolation"  { enabled = true }
+          rule "terraform_deprecated_index"          { enabled = true }
+          rule "terraform_unused_declarations"       { enabled = true }
+          rule "terraform_comment_syntax"            { enabled = true }
+          rule "terraform_documented_outputs"        { enabled = true }
+          rule "terraform_documented_variables"      { enabled = true }
+          rule "terraform_typed_variables"           { enabled = true }
+          rule "terraform_module_pinned_source"      { enabled = true }
+          rule "terraform_naming_convention"         { enabled = true }
+          rule "terraform_required_version"          { enabled = true }
+          rule "terraform_required_providers"        { enabled = true }
+          rule "terraform_unused_required_providers" { enabled = true }
+          TFLINT_EOF
+          echo "Default tflint config written to $config"
+
+      - name: Terraform format check
+        if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          TF_DIRS: ${{ steps.files.outputs.tf_dirs }}
+        run: |
+          exit_code=0
+          for dir in $TF_DIRS; do
+            echo "── terraform fmt check: $dir"
+            terraform fmt -check -recursive "$dir" || exit_code=1
+          done
+          exit $exit_code
+
+      - name: Install tflint
+        if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
+        run: |
+          TFLINT_VERSION="0.55.0"
+          curl -fsSL \
+            "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_amd64.zip" \
+            -o /tmp/tflint.zip
+          unzip -q /tmp/tflint.zip -d /tmp/tflint
+          sudo mv /tmp/tflint/tflint /usr/local/bin/tflint
+          rm -rf /tmp/tflint /tmp/tflint.zip
+          tflint --version
+
+      - name: Run tflint
+        if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          TF_DIRS: ${{ steps.files.outputs.tf_dirs }}
+          TFLINT_CONFIG_FILE: ${{ inputs.tflint_config_file }}
+          WORKDIR_PATH: ${{ steps.workdir.outputs.path }}
+        run: |
+          tflint_config="$WORKDIR_PATH/$TFLINT_CONFIG_FILE"
+          tflint --init --config="$tflint_config"
+          exit_code=0
+          for dir in $TF_DIRS; do
+            echo "── tflint: $dir"
+            tflint --chdir="$dir" --config="$tflint_config" || exit_code=1
+          done
+          exit $exit_code
+
+      - name: Install checkov
+        if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
+        run: pip install "checkov==3.2.0" --quiet
+
+      - name: Run checkov security scan
+        if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          CHECKOV_SEVERITY: ${{ inputs.checkov_minimum_severity }}
+          CHECKOV_SOFT_FAIL: ${{ inputs.checkov_soft_fail }}
+        run: |
+          SOFT_FAIL_FLAG=""
+          [[ "$CHECKOV_SOFT_FAIL" == "true" ]] && SOFT_FAIL_FLAG="--soft-fail"
+          checkov \
+            --directory . \
+            --framework terraform \
+            --output sarif \
+            --output-file-path . \
+            --compact \
+            --severity "$CHECKOV_SEVERITY" \
+            ${SOFT_FAIL_FLAG:+$SOFT_FAIL_FLAG}
+
+      - name: Upload checkov SARIF report
+        if: always() && inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
+        uses: github/codeql-action/upload-sarif@v3 # pin to a SHA in production
+        with:
+          sarif_file: ${{ steps.workdir.outputs.path }}/results_sarif.sarif
+          category: checkov
+          wait-for-processing: true
+
+      # ── YAML ───────────────────────────────────────────────────────────────
+
+      - name: Install yamllint
+        if: inputs.enable_yaml && steps.files.outputs.yaml_files != ''
+        run: pip install "yamllint==1.35.1" --quiet
+
+      - name: Run yamllint
+        if: inputs.enable_yaml && steps.files.outputs.yaml_files != ''
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          YAML_FILES: ${{ steps.files.outputs.yaml_files }}
+        run: yamllint --format colored -d relaxed $YAML_FILES
+
+      # ── JSON ───────────────────────────────────────────────────────────────
+
+      - name: Validate JSON files
+        if: inputs.enable_json && steps.files.outputs.json_files != ''
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          JSON_FILES: ${{ steps.files.outputs.json_files }}
+        run: |
+          exit_code=0
+          for f in $JSON_FILES; do
+            echo "── json validate: $f"
+            jq empty "$f" && echo "OK" || exit_code=1
+          done
+          exit $exit_code
+
+      # ── Markdown ───────────────────────────────────────────────────────────
+
+      - name: Install markdownlint-cli
+        if: inputs.enable_markdown && steps.files.outputs.md_files != ''
+        run: npm install -g "markdownlint-cli@0.43.0" --silent
+
+      - name: Run markdownlint
+        if: inputs.enable_markdown && steps.files.outputs.md_files != ''
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          MD_FILES: ${{ steps.files.outputs.md_files }}
+        run: markdownlint $MD_FILES
+

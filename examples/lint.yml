@@ -1,0 +1,32 @@
+name: Lint
+
+on:
+  pull_request:
+    branches:
+      - code-formatter
+
+jobs:
+  lint:
+    uses: ministryofjustice/cloud-platform-github-workflows/.github/workflows/code-format.yml@main # TODO: replace @main with a pinned SHA e.g. @abc1234
+    permissions:
+      contents: read
+      security-events: write
+    with:
+      enable_terraform: true
+      enable_yaml: true
+      enable_json: true
+      enable_markdown: true
+      validate_all_codebase: auto  # changed files on PRs, all files on push to main
+      checkov_minimum_severity: HIGH
+      checkov_soft_fail: false
+
+  auto-fix:
+    uses: ministryofjustice/cloud-platform-github-workflows/.github/workflows/code-fix.yml@main # TODO: replace @main with a pinned SHA e.g. @abc1234
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: write
+      pull-requests: write
+    with:
+      enable_terraform: true
+      enable_markdown: true
+      validate_all_codebase: auto  # only fix files changed in the PR
