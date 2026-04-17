@@ -244,7 +244,13 @@ jobs:
         working-directory: ${{ steps.workdir.outputs.path }}
         env:
           YAML_FILES: ${{ steps.files.outputs.yaml_files }}
-        run: yamllint --format colored -d relaxed $YAML_FILES
+        run: |
+          cat > /tmp/.yamllint << 'EOF'
+          extends: relaxed
+          rules:
+            new-line-at-end-of-file: disable
+          EOF
+          yamllint --format colored -c /tmp/.yamllint $YAML_FILES
 
       - name: Check final newlines in YAML files
         if: inputs.enable_yaml && steps.files.outputs.yaml_files != ''
