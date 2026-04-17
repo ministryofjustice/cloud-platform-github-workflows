@@ -246,6 +246,21 @@ jobs:
           YAML_FILES: ${{ steps.files.outputs.yaml_files }}
         run: yamllint --format colored -d relaxed $YAML_FILES
 
+      - name: Check final newlines in YAML files
+        if: inputs.enable_yaml && steps.files.outputs.yaml_files != ''
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          YAML_FILES: ${{ steps.files.outputs.yaml_files }}
+        run: |
+          exit_code=0
+          for f in $YAML_FILES; do
+            if [[ -s "$f" ]] && [[ "$(tail -c1 "$f" | wc -l)" -eq 0 ]]; then
+              echo "missing final newline: $f"
+              exit_code=1
+            fi
+          done
+          exit $exit_code
+
       # ── JSON ───────────────────────────────────────────────────────────────
 
       - name: Validate JSON files

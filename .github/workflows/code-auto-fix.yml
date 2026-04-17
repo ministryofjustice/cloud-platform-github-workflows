@@ -77,21 +77,26 @@ jobs:
           if [[ "$validate_all" == "true" ]]; then
             tf_dirs=$(find . -name "*.tf" -not -path "./.git/*" -exec dirname {} \; 2>/dev/null | sort -u | tr '\n' ' ' || true)
             md_files=$(find . -name "*.md" -not -path "./.git/*" 2>/dev/null | sed 's|^\./||' | tr '\n' ' ' || true)
+            yaml_files=$(find . \( -name "*.yml" -o -name "*.yaml" \) -not -path "./.git/*" 2>/dev/null | sed 's|^\./||' | tr '\n' ' ' || true)
           else
             base_ref="origin/$BASE_REF"
             all_changed=$(git diff --name-only --diff-filter=d "${base_ref}...HEAD" 2>/dev/null || true)
             tf_dirs=$(echo "$all_changed" | grep '\.tf$' | xargs -I{} dirname {} 2>/dev/null | sort -u | tr '\n' ' ' || true)
             md_files=$(echo "$all_changed" | grep '\.md$' | tr '\n' ' ' || true)
+            yaml_files=$(echo "$all_changed" | grep -E '\.(yml|yaml)$' | tr '\n' ' ' || true)
           fi
 
           tf_dirs="${tf_dirs%% }"
           md_files="${md_files%% }"
+          yaml_files="${yaml_files%% }"
 
-          echo "tf_dirs=$tf_dirs"   >> "$GITHUB_OUTPUT"
-          echo "md_files=$md_files" >> "$GITHUB_OUTPUT"
+          echo "tf_dirs=$tf_dirs"       >> "$GITHUB_OUTPUT"
+          echo "md_files=$md_files"     >> "$GITHUB_OUTPUT"
+          echo "yaml_files=$yaml_files" >> "$GITHUB_OUTPUT"
 
-          echo "tf_dirs:  [$tf_dirs]"
-          echo "md_files: [$md_files]"
+          echo "tf_dirs:    [$tf_dirs]"
+          echo "md_files:   [$md_files]"
+          echo "yaml_files: [$yaml_files]"
 
       - name: Install markdownlint-cli
         if: inputs.enable_markdown && steps.files.outputs.md_files != ''
@@ -105,6 +110,7 @@ jobs:
           ENABLE_MARKDOWN: ${{ inputs.enable_markdown }}
           TF_DIRS: ${{ steps.files.outputs.tf_dirs }}
           MD_FILES: ${{ steps.files.outputs.md_files }}
+          YAML_FILES: ${{ steps.files.outputs.yaml_files }}
         run: |
           if [[ "$ENABLE_TERRAFORM" == "true" && "$TF_DIRS" != "" ]]; then
             for dir in $TF_DIRS; do
@@ -117,6 +123,14 @@ jobs:
             echo "── markdownlint --fix"
             markdownlint --fix $MD_FILES || true
           fi
+
+          echo "── fix final newlines in YAML files"
+          for f in $YAML_FILES; do
+            if [[ -s "$f" ]] && [[ "$(tail -c1 "$f" | wc -l)" -eq 0 ]]; then
+              echo >> "$f"
+              echo "fixed final newline: $f"
+            fi
+          done
 
           if git diff --quiet; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
