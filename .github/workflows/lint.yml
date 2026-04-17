@@ -23,11 +23,10 @@ jobs:
 
   auto-fix:
     uses: ministryofjustice/cloud-platform-github-workflows/.github/workflows/code-auto-fix.yml@code-formatter
-    if: github.event_name == 'pull_request'
     permissions:
       contents: write
       pull-requests: write
     with:
       enable_terraform: true
       enable_markdown: true
-      validate_all_codebase: auto  # only fix files changed in the PR
+      validate_all_codebase: auto  # changed files on PRs, all files on push
