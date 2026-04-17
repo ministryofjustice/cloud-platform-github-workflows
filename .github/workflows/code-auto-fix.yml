@@ -77,13 +77,13 @@ jobs:
           if [[ "$validate_all" == "true" ]]; then
             tf_dirs=$(find . -name "*.tf" -not -path "./.git/*" -exec dirname {} \; 2>/dev/null | sort -u | tr '\n' ' ' || true)
             md_files=$(find . -name "*.md" -not -path "./.git/*" 2>/dev/null | sed 's|^\./||' | tr '\n' ' ' || true)
-            yaml_files=$(find . \( -name "*.yml" -o -name "*.yaml" \) -not -path "./.git/*" 2>/dev/null | sed 's|^\./||' | tr '\n' ' ' || true)
+            yaml_files=$(find . \( -name "*.yml" -o -name "*.yaml" \) -not -path "./.git/*" -not -path "./.github/*" 2>/dev/null | sed 's|^\./||' | tr '\n' ' ' || true)
           else
             base_ref="origin/$BASE_REF"
             all_changed=$(git diff --name-only --diff-filter=d "${base_ref}...HEAD" 2>/dev/null || true)
             tf_dirs=$(echo "$all_changed" | grep '\.tf$' | xargs -I{} dirname {} 2>/dev/null | sort -u | tr '\n' ' ' || true)
             md_files=$(echo "$all_changed" | grep '\.md$' | tr '\n' ' ' || true)
-            yaml_files=$(echo "$all_changed" | grep -E '\.(yml|yaml)$' | tr '\n' ' ' || true)
+            yaml_files=$(echo "$all_changed" | grep -E '\.(yml|yaml)$' | grep -v '^\.github/' | tr '\n' ' ' || true)
           fi
 
           tf_dirs="${tf_dirs%% }"
