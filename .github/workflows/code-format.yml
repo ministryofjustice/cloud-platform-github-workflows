@@ -37,7 +37,7 @@ on:
         type: string
         default: "auto"
       checkov_minimum_severity:
-        description: "Minimum checkov severity to report (CRITICAL, HIGH, MEDIUM, LOW, INFO)"
+        description: "Minimum severity for checkov to report and fail on (CRITICAL, HIGH, MEDIUM, LOW, INFO)"
         type: string
         default: "HIGH"
       checkov_soft_fail:
@@ -261,7 +261,7 @@ jobs:
         continue-on-error: true
         working-directory: ${{ steps.workdir.outputs.path }}
         env:
-          CHECKOV_SEVERITY: ${{ inputs.checkov_minimum_severity }}
+          CHECKOV_MIN_SEVERITY: ${{ inputs.checkov_minimum_severity }}
           CHECKOV_SOFT_FAIL: ${{ inputs.checkov_soft_fail }}
         run: |
           SOFT_FAIL_FLAG=""
@@ -272,7 +272,7 @@ jobs:
             --output sarif \
             --output-file-path /tmp/checkov-results \
             --compact \
-            --severity "$CHECKOV_SEVERITY" \
+            --minimum-severity "$CHECKOV_MIN_SEVERITY" \
             ${SOFT_FAIL_FLAG:+$SOFT_FAIL_FLAG}
 
       - name: Upload checkov SARIF report
