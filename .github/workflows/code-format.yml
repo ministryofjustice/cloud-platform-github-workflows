@@ -212,7 +212,9 @@ jobs:
           echo "Default tflint config written to $config"
 
       - name: Terraform format check
+        id: lint_tf_fmt
         if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
+        continue-on-error: true
         working-directory: ${{ steps.workdir.outputs.path }}
         env:
           TF_DIRS: ${{ steps.files.outputs.tf_dirs }}
@@ -231,7 +233,9 @@ jobs:
           tflint_version: v0.55.0
 
       - name: Run tflint
+        id: lint_tflint
         if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
+        continue-on-error: true
         working-directory: ${{ steps.workdir.outputs.path }}
         env:
           TF_DIRS: ${{ steps.files.outputs.tf_dirs }}
@@ -252,7 +256,9 @@ jobs:
         run: pip install "checkov==3.2.0" --quiet
 
       - name: Run checkov security scan
+        id: lint_checkov
         if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
+        continue-on-error: true
         working-directory: ${{ steps.workdir.outputs.path }}
         env:
           CHECKOV_SEVERITY: ${{ inputs.checkov_minimum_severity }}
@@ -284,7 +290,9 @@ jobs:
         run: pip install "yamllint==1.35.1" --quiet
 
       - name: Run yamllint
+        id: lint_yamllint
         if: inputs.enable_yaml && steps.files.outputs.yaml_files != ''
+        continue-on-error: true
         working-directory: ${{ steps.workdir.outputs.path }}
         env:
           YAML_FILES: ${{ steps.files.outputs.yaml_files }}
@@ -297,7 +305,9 @@ jobs:
           yamllint --format colored -c /tmp/.yamllint $YAML_FILES
 
       - name: Check final newlines in YAML files
+        id: lint_yaml_newlines
         if: inputs.enable_yaml && steps.files.outputs.yaml_files != ''
+        continue-on-error: true
         working-directory: ${{ steps.workdir.outputs.path }}
         env:
           YAML_FILES: ${{ steps.files.outputs.yaml_files }}
@@ -314,7 +324,9 @@ jobs:
       # ── JSON ───────────────────────────────────────────────────────────────
 
       - name: Validate JSON files
+        id: lint_json
         if: inputs.enable_json && steps.files.outputs.json_files != ''
+        continue-on-error: true
         working-directory: ${{ steps.workdir.outputs.path }}
         env:
           JSON_FILES: ${{ steps.files.outputs.json_files }}
@@ -329,7 +341,9 @@ jobs:
       # ── Markdown ───────────────────────────────────────────────────────────
 
       - name: Run markdownlint
+        id: lint_markdown
         if: inputs.enable_markdown && steps.files.outputs.md_files != ''
+        continue-on-error: true
         working-directory: ${{ steps.workdir.outputs.path }}
         env:
           MD_FILES: ${{ steps.files.outputs.md_files }}
@@ -337,8 +351,26 @@ jobs:
 
       # ── Commit and raise PR ────────────────────────────────────────────────
 
+      - name: Fail if any lint checks failed
+        id: lint_summary
+        if: always()
+        run: |
+          failed=()
+          [[ "${{ steps.lint_tf_fmt.outcome }}"      == "failure" ]] && failed+=("terraform fmt check")
+          [[ "${{ steps.lint_tflint.outcome }}"       == "failure" ]] && failed+=("tflint")
+          [[ "${{ steps.lint_checkov.outcome }}"      == "failure" ]] && failed+=("checkov")
+          [[ "${{ steps.lint_yamllint.outcome }}"     == "failure" ]] && failed+=("yamllint")
+          [[ "${{ steps.lint_yaml_newlines.outcome }}" == "failure" ]] && failed+=("yaml newlines")
+          [[ "${{ steps.lint_json.outcome }}"         == "failure" ]] && failed+=("json validation")
+          [[ "${{ steps.lint_markdown.outcome }}"     == "failure" ]] && failed+=("markdownlint")
+          if [[ ${#failed[@]} -gt 0 ]]; then
+            echo "Lint checks failed: ${failed[*]}"
+            exit 1
+          fi
+          echo "All lint checks passed."
+
       - name: Commit fixes and open PR
-        if: steps.autofix.outputs.has_changes == 'true'
+        if: steps.autofix.outputs.has_changes == 'true' && steps.lint_summary.outcome == 'success'
         working-directory: ${{ steps.workdir.outputs.path }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
