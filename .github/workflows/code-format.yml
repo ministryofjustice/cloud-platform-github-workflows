@@ -253,7 +253,7 @@ jobs:
 
       - name: Install checkov
         if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
-        run: pip install "checkov==3.2.0" --quiet
+        run: pip install "checkov==3.2.434" --quiet
 
       - name: Run checkov security scan
         id: lint_checkov
