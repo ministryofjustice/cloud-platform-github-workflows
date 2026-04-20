@@ -128,6 +128,10 @@ jobs:
 
       # ── Auto-fix ───────────────────────────────────────────────────────────
 
+      - name: Install Terraform
+        if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd# v3.1.2
+
       - name: Install markdownlint-cli
         if: inputs.enable_markdown && steps.files.outputs.md_files != ''
         run: npm install -g "markdownlint-cli@0.43.0" --ignore-scripts --silent
