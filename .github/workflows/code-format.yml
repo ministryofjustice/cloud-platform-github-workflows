@@ -171,35 +171,6 @@ jobs:
             git diff --stat
           fi
 
-      - name: Commit fixes and open PR
-        if: steps.autofix.outputs.has_changes == 'true'
-        working-directory: ${{ steps.workdir.outputs.path }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BASE_BRANCH: ${{ github.head_ref || github.ref_name }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          fix_branch="auto-fix/lint-$(date +%Y%m%d-%H%M%S)"
-
-          git checkout -b "$fix_branch"
-          git add -A
-          git commit -m "chore: auto-fix lint formatting issues"
-          git push origin "$fix_branch"
-
-          gh pr create \
-            --title "chore: auto-fix lint formatting issues" \
-            --body "Automated formatting fixes applied by the Code Lint and Auto-fix workflow.
-
-          **Fixes applied:**
-          - \`terraform fmt\` on all changed Terraform directories
-          - \`markdownlint --fix\` on all changed Markdown files
-          - Final newline fixes on YAML files
-
-          Issues requiring manual attention (tflint, checkov, yamllint, JSON) should be addressed separately." \
-            --base "$BASE_BRANCH"
-
       # ── Terraform ──────────────────────────────────────────────────────────
 
       - name: Write default tflint config
@@ -369,4 +340,35 @@ jobs:
         env:
           MD_FILES: ${{ steps.files.outputs.md_files }}
         run: markdownlint $MD_FILES
+
+      # ── Commit and raise PR ────────────────────────────────────────────────
+
+      - name: Commit fixes and open PR
+        if: steps.autofix.outputs.has_changes == 'true'
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          fix_branch="auto-fix/lint-$(date +%Y%m%d-%H%M%S)"
+
+          git checkout -b "$fix_branch"
+          git add -A
+          git commit -m "chore: auto-fix lint formatting issues"
+          git push origin "$fix_branch"
+
+          gh pr create \
+            --title "chore: auto-fix lint formatting issues" \
+            --body "Automated formatting fixes applied by the Code Lint and Auto-fix workflow.
+
+          **Fixes applied:**
+          - \`terraform fmt\` on all changed Terraform directories
+          - \`markdownlint --fix\` on all changed Markdown files
+          - Final newline fixes on YAML files
+
+          Issues requiring manual attention (tflint, checkov, yamllint, JSON) should be addressed separately." \
+            --base "$BASE_BRANCH"
 
