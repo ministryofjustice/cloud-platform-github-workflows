@@ -226,19 +226,9 @@ jobs:
 
       - name: Install tflint
         if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
-        run: |
-          TFLINT_VERSION="0.55.0"
-          # SHA256 for tflint_linux_amd64.zip — copy from:
-          # https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/checksums.txt
-          TFLINT_SHA256="<TODO: sha256 of tflint_linux_amd64.zip from checksums.txt>"
-          curl -fsSL \
-            "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_amd64.zip" \
-            -o /tmp/tflint.zip
-          echo "${TFLINT_SHA256}  /tmp/tflint.zip" | sha256sum --check --strict
-          unzip -q /tmp/tflint.zip -d /tmp/tflint
-          sudo mv /tmp/tflint/tflint /usr/local/bin/tflint
-          rm -rf /tmp/tflint /tmp/tflint.zip
-          tflint --version
+        uses: terraform-linters/setup-tflint@19a52fbac37dacb22a09518e4ef6ee234f2d4987 # v4.0.0
+        with:
+          tflint_version: v0.55.0
 
       - name: Run tflint
         if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
