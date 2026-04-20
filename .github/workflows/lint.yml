@@ -1,4 +1,4 @@
-name: Lint
+name: Lint and Auto-fix
 
 on:
   push:
@@ -7,26 +7,17 @@ on:
     types: [opened, edited, reopened, synchronize]
 
 jobs:
-  lint:
+  lint-and-fix:
     uses: ministryofjustice/cloud-platform-github-workflows/.github/workflows/code-format.yml@code-formatter
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
       security-events: write
     with:
       enable_terraform: true
       enable_yaml: true
       enable_json: true
       enable_markdown: true
-      validate_all_codebase: auto  # changed files on PRs, all files on push to main
+      validate_all_codebase: auto  # changed files on PRs, all files on push
       checkov_minimum_severity: HIGH
       checkov_soft_fail: false
-
-  auto-fix:
-    uses: ministryofjustice/cloud-platform-github-workflows/.github/workflows/code-auto-fix.yml@code-formatter
-    permissions:
-      contents: write
-      pull-requests: write
-    with:
-      enable_terraform: true
-      enable_markdown: true
-      validate_all_codebase: auto  # changed files on PRs, all files on push

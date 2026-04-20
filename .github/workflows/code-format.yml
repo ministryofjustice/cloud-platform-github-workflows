@@ -1,10 +1,10 @@
-name: Code Lint
+name: Code Lint and Auto-fix
 
 on:
   workflow_call:
     inputs:
       enable_terraform:
-        description: "Enable Terraform linting (tflint + fmt check) and security scanning (checkov)"
+        description: "Enable Terraform formatting (fmt), linting (tflint) and security scanning (checkov)"
         type: boolean
         default: true
       enable_yaml:
@@ -16,11 +16,11 @@ on:
         type: boolean
         default: true
       enable_markdown:
-        description: "Enable Markdown linting"
+        description: "Enable Markdown linting and auto-fix"
         type: boolean
         default: true
       working_directory:
-        description: "Root directory to lint, relative to the repository root"
+        description: "Root directory to lint and fix, relative to the repository root"
         type: string
         default: "."
       tflint_config_file:
@@ -31,9 +31,9 @@ on:
         default: ".tflint.hcl"
       validate_all_codebase:
         description: >
-          Lint scope. 'auto' (default): changed files on pull_request events,
-          all files on every other event. 'true': always lint all files.
-          'false': always lint only changed files.
+          Scope. 'auto' (default): changed files on pull_request events,
+          all files on every other event. 'true': always process all files.
+          'false': always process only changed files.
         type: string
         default: "auto"
       checkov_minimum_severity:
@@ -49,11 +49,12 @@ permissions:
   contents: read
 
 jobs:
-  lint:
-    name: Lint
+  lint-and-fix:
+    name: Lint and Auto-fix
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write      # Required to push auto-fix branches
+      pull-requests: write # Required to open auto-fix PRs
       security-events: write # Required to upload SARIF to the GitHub Security tab
 
     defaults:
@@ -77,7 +78,7 @@ jobs:
             echo "path=${{ github.workspace }}/$INPUT_WD" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Determine lint scope and collect target files
+      - name: Collect target files
         id: files
         working-directory: ${{ steps.workdir.outputs.path }}
         env:
@@ -94,7 +95,7 @@ jobs:
           else
             validate_all=true
           fi
-          echo "Lint scope: validate_all=$validate_all (event=$EVENT_NAME, input=$SCOPE)"
+          echo "Scope: validate_all=$validate_all (event=$EVENT_NAME, input=$SCOPE)"
 
           if [[ "$validate_all" == "true" ]]; then
             tf_dirs=$(find . -name "*.tf" -not -path "./.git/*" -exec dirname {} \; 2>/dev/null | sort -u | tr '\n' ' ' || true)
@@ -124,6 +125,80 @@ jobs:
           echo "yaml_files: [$yaml_files]"
           echo "json_files: [$json_files]"
           echo "md_files:   [$md_files]"
+
+      # ── Auto-fix ───────────────────────────────────────────────────────────
+
+      - name: Install markdownlint-cli
+        if: inputs.enable_markdown && steps.files.outputs.md_files != ''
+        run: npm install -g "markdownlint-cli@0.43.0" --ignore-scripts --silent
+
+      - name: Apply auto-fixes
+        id: autofix
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          ENABLE_TERRAFORM: ${{ inputs.enable_terraform }}
+          ENABLE_MARKDOWN: ${{ inputs.enable_markdown }}
+          TF_DIRS: ${{ steps.files.outputs.tf_dirs }}
+          MD_FILES: ${{ steps.files.outputs.md_files }}
+          YAML_FILES: ${{ steps.files.outputs.yaml_files }}
+        run: |
+          if [[ "$ENABLE_TERRAFORM" == "true" && "$TF_DIRS" != "" ]]; then
+            for dir in $TF_DIRS; do
+              echo "── terraform fmt: $dir"
+              terraform fmt -recursive "$dir"
+            done
+          fi
+
+          if [[ "$ENABLE_MARKDOWN" == "true" && "$MD_FILES" != "" ]]; then
+            echo "── markdownlint --fix"
+            markdownlint --fix $MD_FILES || true
+          fi
+
+          echo "── fix final newlines in YAML files"
+          for f in $YAML_FILES; do
+            if [[ -s "$f" ]] && [[ "$(tail -c1 "$f" | wc -l)" -eq 0 ]]; then
+              echo >> "$f"
+              echo "fixed final newline: $f"
+            fi
+          done
+
+          if git diff --quiet; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No fixable changes found."
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "Fixable changes detected:"
+            git diff --stat
+          fi
+
+      - name: Commit fixes and open PR
+        if: steps.autofix.outputs.has_changes == 'true'
+        working-directory: ${{ steps.workdir.outputs.path }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          fix_branch="auto-fix/lint-$(date +%Y%m%d-%H%M%S)"
+
+          git checkout -b "$fix_branch"
+          git add -A
+          git commit -m "chore: auto-fix lint formatting issues"
+          git push origin "$fix_branch"
+
+          gh pr create \
+            --title "chore: auto-fix lint formatting issues" \
+            --body "Automated formatting fixes applied by the Code Lint and Auto-fix workflow.
+
+          **Fixes applied:**
+          - \`terraform fmt\` on all changed Terraform directories
+          - \`markdownlint --fix\` on all changed Markdown files
+          - Final newline fixes on YAML files
+
+          Issues requiring manual attention (tflint, checkov, yamllint, JSON) should be addressed separately." \
+            --base "$BASE_BRANCH"
 
       # ── Terraform ──────────────────────────────────────────────────────────
 
@@ -178,9 +253,13 @@ jobs:
         if: inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
         run: |
           TFLINT_VERSION="0.55.0"
+          # SHA256 for tflint_linux_amd64.zip — copy from:
+          # https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/checksums.txt
+          TFLINT_SHA256="<TODO: sha256 of tflint_linux_amd64.zip from checksums.txt>"
           curl -fsSL \
             "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_amd64.zip" \
             -o /tmp/tflint.zip
+          echo "${TFLINT_SHA256}  /tmp/tflint.zip" | sha256sum --check --strict
           unzip -q /tmp/tflint.zip -d /tmp/tflint
           sudo mv /tmp/tflint/tflint /usr/local/bin/tflint
           rm -rf /tmp/tflint /tmp/tflint.zip
@@ -227,7 +306,7 @@ jobs:
 
       - name: Upload checkov SARIF report
         if: always() && inputs.enable_terraform && steps.files.outputs.tf_dirs != ''
-        uses: github/codeql-action/upload-sarif@v3 # pin to a SHA in production
+        uses: github/codeql-action/upload-sarif@<TODO: pin SHA from https://github.com/github/codeql-action/releases> # v3
         with:
           sarif_file: ${{ steps.workdir.outputs.path }}/results_sarif.sarif
           category: checkov
@@ -283,10 +362,6 @@ jobs:
           exit $exit_code
 
       # ── Markdown ───────────────────────────────────────────────────────────
-
-      - name: Install markdownlint-cli
-        if: inputs.enable_markdown && steps.files.outputs.md_files != ''
-        run: npm install -g "markdownlint-cli@0.43.0" --silent
 
       - name: Run markdownlint
         if: inputs.enable_markdown && steps.files.outputs.md_files != ''
