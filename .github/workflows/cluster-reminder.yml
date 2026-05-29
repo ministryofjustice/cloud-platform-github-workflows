@@ -2,6 +2,7 @@ name: Cluster Reminder
 on:
   schedule:
     - cron: '0 10 * * 5' # Every Friday 10:00 AM
+    - cron: '0 15 * * 5' # Every Friday 3:00 PM
   workflow_dispatch:
     inputs:
       branch_name:
