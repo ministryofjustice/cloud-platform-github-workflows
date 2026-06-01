@@ -41,5 +41,5 @@ done
 echo -e "$title\nAccount: $accountAliases\n"
 echo -e "$clusters_msg\n"
 for line in "${cluster_output_lines[@]}"; do
-  echo -e "$line\n"
+  echo -e "\`$line\`\n"
 done
