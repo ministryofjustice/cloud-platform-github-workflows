@@ -27,17 +27,19 @@ else
   clusters_msg="*Yay, there are no development clusters to cleanup!*"
 fi
 
-cluster_output_lines=""
+cluster_output_lines=()
 for cluster in $clustersToDelete; do
   created_by=$(aws eks describe-cluster --name "$cluster" --region eu-west-2 | jq -r '.cluster.tags.created_by // .cluster.tags["created-by"] // empty')
 
   if [[ -n "$created_by" ]]; then
-    cluster_output_lines+="- $cluster $created_by\n"
+    cluster_output_lines+=("- $cluster $created_by")
   else
-    cluster_output_lines+="- $cluster\n"
+    cluster_output_lines+=("- $cluster")
   fi
 done
 
 echo -e "$title\nAccount: $accountAliases\n"
 echo -e "$clusters_msg\n"
-echo -e "$cluster_output_lines"
+for line in "${cluster_output_lines[@]}"; do
+  echo "$line"
+done
