@@ -68,7 +68,11 @@ jobs:
          - name: Check kube config
            run: |
             kubectl config current-context || true
+            
          - name: Run integration tests
+           env:
+             CLUSTER_NAME: ${{ needs.set-cluster-name.outputs.cluster_name }}
+             EKS_CLUSTER_NAME: ${{ needs.set-cluster-name.outputs.cluster_name }}
            run: |
              cd ./test;  ginkgo -r -v --progress --output-interceptor-mode=none --junit-report=report.xml
 
