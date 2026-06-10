@@ -1,0 +1,120 @@
+---
+name: Force Unlock Terraform State
+on:
+  workflow_dispatch:
+    inputs:
+      cluster_name:
+        description: "Name of the cluster workspace to force unlock"
+        required: true
+        type: string
+
+permissions:
+  id-token: write  # This is required for requesting the JWT
+  contents: read   # This is required for actions/checkout
+
+run-name: "Force unlock terraform state for ${{ inputs.cluster_name }} by @${{ github.actor }}"
+
+jobs:
+  force-unlock-state:
+    name: Force Unlock Terraform State
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          repository: 'ministryofjustice/modernisation-platform-environments'
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+        with:
+          role-to-assume: arn:aws:iam::${{secrets.CLOUD_PLATFORM_DEVELOPMENT_ACCOUNT_ID}}:role/github-actions-development-cluster
+          role-session-name: GitHubActionsForceLockUnlockSession
+          aws-region: eu-west-2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.14.3
+
+      - name: Network - Terraform init
+        run: terraform init
+        working-directory: terraform/environments/cloud-platform/network
+
+      - name: Network - Terraform workspace select
+        run: terraform workspace select ${{ inputs.cluster_name }}
+        working-directory: terraform/environments/cloud-platform/network
+        continue-on-error: true
+
+      - name: Network - Force Unlock Terraform State
+        run: |
+          LOCK_ID=$(terraform state list -json 2>/dev/null | jq -r '.[]' 2>/dev/null | head -1 || echo "")
+          if [ -z "$LOCK_ID" ]; then
+            echo "No locks found for network"
+          else
+            terraform force-unlock $LOCK_ID || echo "No lock to unlock"
+          fi
+        working-directory: terraform/environments/cloud-platform/network
+        continue-on-error: true
+
+      - name: Cluster - Terraform init
+        run: terraform init
+        working-directory: terraform/environments/cloud-platform/cluster
+
+      - name: Cluster - Terraform workspace select
+        run: terraform workspace select ${{ inputs.cluster_name }}
+        working-directory: terraform/environments/cloud-platform/cluster
+        continue-on-error: true
+
+      - name: Cluster - Force Unlock Terraform State
+        run: |
+          LOCK_ID=$(terraform state list -json 2>/dev/null | jq -r '.[]' 2>/dev/null | head -1 || echo "")
+          if [ -z "$LOCK_ID" ]; then
+            echo "No locks found for cluster"
+          else
+            terraform force-unlock $LOCK_ID || echo "No lock to unlock"
+          fi
+        working-directory: terraform/environments/cloud-platform/cluster
+        continue-on-error: true
+
+      - name: Cluster-core - Terraform init
+        run: terraform init
+        working-directory: terraform/environments/cloud-platform/cluster-core
+
+      - name: Cluster-core - Terraform workspace select
+        run: terraform workspace select ${{ inputs.cluster_name }}
+        working-directory: terraform/environments/cloud-platform/cluster-core
+        continue-on-error: true
+
+      - name: Cluster-core - Force Unlock Terraform State
+        run: |
+          LOCK_ID=$(terraform state list -json 2>/dev/null | jq -r '.[]' 2>/dev/null | head -1 || echo "")
+          if [ -z "$LOCK_ID" ]; then
+            echo "No locks found for cluster-core"
+          else
+            terraform force-unlock $LOCK_ID || echo "No lock to unlock"
+          fi
+        working-directory: terraform/environments/cloud-platform/cluster-core
+        continue-on-error: true
+
+      - name: Cluster-components - Terraform init
+        run: terraform init
+        working-directory: terraform/environments/cloud-platform/cluster-components
+
+      - name: Cluster-components - Terraform workspace select
+        run: terraform workspace select ${{ inputs.cluster_name }}
+        working-directory: terraform/environments/cloud-platform/cluster-components
+        continue-on-error: true
+
+      - name: Cluster-components - Force Unlock Terraform State
+        run: |
+          LOCK_ID=$(terraform state list -json 2>/dev/null | jq -r '.[]' 2>/dev/null | head -1 || echo "")
+          if [ -z "$LOCK_ID" ]; then
+            echo "No locks found for cluster-components"
+          else
+            terraform force-unlock $LOCK_ID || echo "No lock to unlock"
+          fi
+        working-directory: terraform/environments/cloud-platform/cluster-components
+        continue-on-error: true
+
+      - name: Completion Summary
+        run: echo "Force unlock process completed for cluster ${{ inputs.cluster_name }} across all terraform directories"
