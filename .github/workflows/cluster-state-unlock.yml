@@ -9,7 +9,7 @@ on:
         type: string
       lock_id:
         description: "Specific lock ID to unlock"
-        required: false
+        required: true
         type: string
       terraform_env_location:
         description: "Terraform environment location to force unlock"
