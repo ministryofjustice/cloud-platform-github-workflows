@@ -7,6 +7,10 @@ on:
         description: "Name of the cluster workspace to force unlock"
         required: true
         type: string
+      lock_id:
+        description: "Specific lock ID to unlock"
+        required: false
+        type: string
 
 permissions:
   id-token: write  # This is required for requesting the JWT
@@ -46,13 +50,7 @@ jobs:
         continue-on-error: true
 
       - name: Network - Force Unlock Terraform State
-        run: |
-          LOCK_ID=$(terraform state list -json 2>/dev/null | jq -r '.[]' 2>/dev/null | head -1 || echo "")
-          if [ -z "$LOCK_ID" ]; then
-            echo "No locks found for network"
-          else
-            terraform force-unlock $LOCK_ID || echo "No lock to unlock"
-          fi
+        run: terraform force-unlock ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
         working-directory: terraform/environments/cloud-platform/network
         continue-on-error: true
 
@@ -66,13 +64,7 @@ jobs:
         continue-on-error: true
 
       - name: Cluster - Force Unlock Terraform State
-        run: |
-          LOCK_ID=$(terraform state list -json 2>/dev/null | jq -r '.[]' 2>/dev/null | head -1 || echo "")
-          if [ -z "$LOCK_ID" ]; then
-            echo "No locks found for cluster"
-          else
-            terraform force-unlock $LOCK_ID || echo "No lock to unlock"
-          fi
+        run: terraform force-unlock ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
         working-directory: terraform/environments/cloud-platform/cluster
         continue-on-error: true
 
@@ -86,13 +78,7 @@ jobs:
         continue-on-error: true
 
       - name: Cluster-core - Force Unlock Terraform State
-        run: |
-          LOCK_ID=$(terraform state list -json 2>/dev/null | jq -r '.[]' 2>/dev/null | head -1 || echo "")
-          if [ -z "$LOCK_ID" ]; then
-            echo "No locks found for cluster-core"
-          else
-            terraform force-unlock $LOCK_ID || echo "No lock to unlock"
-          fi
+        run: terraform force-unlock ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
         working-directory: terraform/environments/cloud-platform/cluster-core
         continue-on-error: true
 
@@ -106,13 +92,7 @@ jobs:
         continue-on-error: true
 
       - name: Cluster-components - Force Unlock Terraform State
-        run: |
-          LOCK_ID=$(terraform state list -json 2>/dev/null | jq -r '.[]' 2>/dev/null | head -1 || echo "")
-          if [ -z "$LOCK_ID" ]; then
-            echo "No locks found for cluster-components"
-          else
-            terraform force-unlock $LOCK_ID || echo "No lock to unlock"
-          fi
+        run: terraform force-unlock ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
         working-directory: terraform/environments/cloud-platform/cluster-components
         continue-on-error: true
 
