@@ -60,7 +60,7 @@ jobs:
         continue-on-error: true
 
       - name: Network - Force Unlock Terraform State
-        run: terraform force-unlock ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
+        run: terraform force-unlock -force ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
         working-directory: terraform/environments/cloud-platform/network
         continue-on-error: true
 
@@ -96,7 +96,7 @@ jobs:
         continue-on-error: true
 
       - name: Cluster - Force Unlock Terraform State
-        run: terraform force-unlock ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
+        run: terraform force-unlock -force ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
         working-directory: terraform/environments/cloud-platform/cluster
         continue-on-error: true
 
@@ -132,7 +132,7 @@ jobs:
         continue-on-error: true
 
       - name: Cluster-core - Force Unlock Terraform State
-        run: terraform force-unlock ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
+        run: terraform force-unlock -force ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
         working-directory: terraform/environments/cloud-platform/cluster-core
         continue-on-error: true
 
@@ -168,7 +168,7 @@ jobs:
         continue-on-error: true
 
       - name: Cluster-components - Force Unlock Terraform State
-        run: terraform force-unlock ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
+        run: terraform force-unlock -force ${{ inputs.lock_id }} && echo "Successfully unlocked" || echo "Not unlocked - lock may not exist"
         working-directory: terraform/environments/cloud-platform/cluster-components
         continue-on-error: true
 
