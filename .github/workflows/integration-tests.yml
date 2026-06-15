@@ -70,7 +70,7 @@ jobs:
             kubectl config current-context || true
          - name: Run integration tests
            run: |
-             cd ./test;  ginkgo -r -v --progress --output-interceptor-mode=none --junit-report=report.xml -- -cluster=${{ needs.set-cluster-name.outputs.cluster_name }}
+             cd ./test;  ginkgo -r -v --show-node-events --output-interceptor-mode=none --junit-report=report.xml -- -cluster=${{ needs.set-cluster-name.outputs.cluster_name }}
 
          - name: Upload test report
            uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
