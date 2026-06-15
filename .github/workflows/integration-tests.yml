@@ -40,7 +40,7 @@ jobs:
          - name: Checkout repository
            uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
            with:
-             repository: 'ministryofjustice/cloud-platform-integration-tests'
+             repository: 'ministryofjustice/container-platform-integration-tests'
              ref: ${{ inputs.branch_name }}
 
          - name: Configure AWS Credentials
