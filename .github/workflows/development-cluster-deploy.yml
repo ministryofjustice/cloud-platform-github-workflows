@@ -82,35 +82,6 @@ jobs:
           with:
             terraform_version: 1.14.3
 
-        - name: Network Terraform fmt
-          run: terraform fmt -check
-          working-directory: terraform/environments/cloud-platform/network
-          continue-on-error: true
-
-        - name: Network Terraform init
-          run: terraform init
-          working-directory: terraform/environments/cloud-platform/network
-
-        - name: Network Terraform workspace
-          run: terraform workspace select ${{ needs.set-cluster-name.outputs.cluster_name }} || terraform workspace new ${{ needs.set-cluster-name.outputs.cluster_name }}
-          working-directory: terraform/environments/cloud-platform/network
-
-        - name: Network Terraform validate
-          run: terraform validate -no-color
-          working-directory: terraform/environments/cloud-platform/network
-
-        - name: Network Terraform Plan
-          run: |
-            set -o pipefail
-            terraform plan | ../../../../scripts/redact-output.sh
-          working-directory: terraform/environments/cloud-platform/network
-
-        - name: Network Terraform Apply
-          run: |
-            set -o pipefail
-            terraform apply -auto-approve | ../../../../scripts/redact-output.sh
-          working-directory: terraform/environments/cloud-platform/network
-
         - name: Cluster Terraform fmt
           run: terraform fmt -check
           working-directory: terraform/environments/cloud-platform/cluster
@@ -302,23 +273,3 @@ jobs:
             terraform workspace select default
             terraform workspace delete ${{ inputs.cluster_name }}
           working-directory: terraform/environments/cloud-platform/cluster
-
-        - name: Network Terraform init
-          run: terraform init
-          working-directory: terraform/environments/cloud-platform/network
-
-        - name: Network Terraform workspace select
-          run: terraform workspace select ${{ inputs.cluster_name }}
-          working-directory: terraform/environments/cloud-platform/network
-
-        - name: Network Terraform Destroy
-          run: |
-            set -o pipefail
-            terraform destroy -auto-approve | ../../../../scripts/redact-output.sh
-          working-directory: terraform/environments/cloud-platform/network
-
-        - name: Network Terraform workspace delete
-          run: |
-            terraform workspace select default
-            terraform workspace delete ${{ inputs.cluster_name }}
-          working-directory: terraform/environments/cloud-platform/network
