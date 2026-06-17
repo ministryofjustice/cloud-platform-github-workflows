@@ -16,9 +16,11 @@ on:
   workflow_call:
     inputs:
       cluster_name:
+        description: "Name of the target cluster for integration test run"
         required: true
         type: string
       branch_name:
+        description: "Name of integration tests repository branch to use"
         required: false
         default: "main"
         type: string

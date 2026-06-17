@@ -181,7 +181,6 @@ jobs:
         uses: ./.github/workflows/integration-tests.yml
         with:
           cluster_name: ${{ needs.set-cluster-name.outputs.cluster_name }}
-          branch_name: ${{ inputs.branch_name }}
 
   destroy-development-cluster:
     name: Destroy Development Cluster
