@@ -13,6 +13,20 @@ on:
           default: "main"
           type: string
 
+  workflow_call:
+    inputs:
+      cluster_name:
+        required: true
+        type: string
+      branch_name:
+        required: false
+        default: "main"
+        type: string
+
+env:
+  CLUSTER_NAME: ${{ inputs.cluster_name || github.event.inputs.cluster_name }}
+  BRANCH_NAME: ${{ inputs.branch_name || github.event.inputs.branch_name }}
+  
 permissions:
   id-token: write  # This is required for requesting the JWT
   contents: read  # This is required for actions/checkout
@@ -28,7 +42,7 @@ jobs:
       - name: Set Cluster Name Output
         id: set-cluster-name
         run: |
-          CLUSTER_NAME="${{ inputs.cluster_name }}"
+          CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
           CLUSTER_NAME="${CLUSTER_NAME:0:12}"
           echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
           echo "Cluster Name: $CLUSTER_NAME"
@@ -41,7 +55,7 @@ jobs:
            uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
            with:
              repository: 'ministryofjustice/cloud-platform-integration-tests'
-             ref: ${{ inputs.branch_name }}
+             ref: ${{ env.BRANCH_NAME }}
 
          - name: Configure AWS Credentials
            uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0

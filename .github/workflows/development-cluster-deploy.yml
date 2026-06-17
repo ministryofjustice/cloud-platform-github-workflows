@@ -169,8 +169,8 @@ jobs:
             terraform apply -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster-components
 
-  trigger-integration-tests:
-    name: Trigger Integration Tests On Deploy
+  run-integration-tests:
+    name: Run Integration Tests After Deploy
     if: inputs.cluster_action == 'deploy'
     needs:
       - set-cluster-name
@@ -178,19 +178,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Integration Tests Workflow
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        uses: ./.github/workflows/integration-tests.yml
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'integration-tests.yml',
-              ref: context.ref,
-              inputs: {
-                cluster_name: '${{ needs.set-cluster-name.outputs.cluster_name }}'
-              }
-            });
+          cluster_name: ${{ needs.set-cluster-name.outputs.cluster_name }}
+          branch_name: ${{ inputs.branch_name }}
 
   destroy-development-cluster:
     name: Destroy Development Cluster
