@@ -35,22 +35,21 @@ permissions:
   checks: write  # This is required for publishing test reports
 
 jobs:
-  set-cluster-name:
-    name: Set Cluster Name
-    runs-on: ubuntu-latest
-    outputs:
-      cluster_name: ${{ steps.set-cluster-name.outputs.cluster_name }}
-    steps:
-      - name: Set Cluster Name Output
-        id: set-cluster-name
-        run: |
-          CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
-          CLUSTER_NAME="${CLUSTER_NAME:0:12}"
-          echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
-          echo "Cluster Name: $CLUSTER_NAME"
-
+#  set-cluster-name:
+#    name: Set Cluster Name
+#    outputs:
+#    runs-on: ubuntu-latest
+#      cluster_name: ${{ steps.set-cluster-name.outputs.cluster_name }}
+#    steps:
+#      - name: Set Cluster Name Output
+#        id: set-cluster-name
+#        run: |
+#          CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
+#          CLUSTER_NAME="${CLUSTER_NAME:0:12}"
+#          echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
+#          echo "Cluster Name: $CLUSTER_NAME"
   integration-tests:
-     needs: set-cluster-name
+#     needs: set-cluster-name
      runs-on: ubuntu-latest
      steps:
          - name: Checkout repository
@@ -79,7 +78,7 @@ jobs:
 
          - name: Update kube config
            run: |
-            aws eks --region eu-west-2 update-kubeconfig --name ${{ needs.set-cluster-name.outputs.cluster_name }}
+            aws eks --region eu-west-2 update-kubeconfig --name ${{ env.CLUSTER_NAME }}
 
          - name: Check kube config
            run: |
