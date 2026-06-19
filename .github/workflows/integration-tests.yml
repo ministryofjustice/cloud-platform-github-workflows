@@ -45,10 +45,10 @@ jobs:
         id: set-cluster-name
         run: |
           CLUSTER_NAME="${{ inputs.cluster_name }}"
-#          CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
           CLUSTER_NAME="${CLUSTER_NAME:0:12}"
           echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
           echo "Cluster Name: $CLUSTER_NAME"
+# Removed CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
 
   integration-tests:
      needs: set-cluster-name
