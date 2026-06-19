@@ -177,6 +177,7 @@ jobs:
       - set-cluster-name
       - deploy-development-cluster
     uses: ./.github/workflows/integration-tests.yml
+    secrets: inherit
     with:
       cluster_name: ${{ needs.set-cluster-name.outputs.cluster_name }}
 
