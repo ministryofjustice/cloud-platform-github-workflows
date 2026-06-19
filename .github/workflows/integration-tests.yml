@@ -89,12 +89,12 @@ jobs:
 
          - name: Run integration tests
            run: |
-             cd ./test;  ginkgo -r -v --progress --output-interceptor-mode=none --junit-report=report.xml
+             cd ./test;  ginkgo -r -v --progress --output-interceptor-mode=none --junit-report=report.xml  -- -cluster=${{ needs.set-cluster-name.outputs.cluster_name }}
 #             echo "Cluster from shell: $CLUSTER_NAME"
 #             env | grep CLUSTER_NAME || echo "CLUSTER_NAME not found in env"
 #             cd ./test
 #             pwd
-#             ginkgo -r -v --progress --output-interceptor-mode=none --junit-report=report.xml
+#             ginkgo -r -v --progress --output-interceptor-mode=none --junit-report=report.xml  -- -cluster=${{ needs.set-cluster-name.outputs.cluster_name }}
 
          - name: Upload test report
            uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
