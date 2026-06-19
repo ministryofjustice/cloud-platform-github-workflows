@@ -79,7 +79,7 @@ jobs:
 
          - name: Update kube config
            run: |
-            aws eks --region eu-west-2 update-kubeconfig --name ${{ env.CLUSTER_NAME }}
+            aws eks --region eu-west-2 update-kubeconfig --name ${{ needs.set-cluster-name.outputs.cluster_name }}
 
          - name: Check kube config
            run: |
