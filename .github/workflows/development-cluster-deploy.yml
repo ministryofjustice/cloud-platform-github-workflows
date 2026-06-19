@@ -175,12 +175,9 @@ jobs:
     needs:
       - set-cluster-name
       - deploy-development-cluster
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Integration Tests Workflow
-        uses: ./.github/workflows/integration-tests.yml
-        with:
-          cluster_name: ${{ needs.set-cluster-name.outputs.cluster_name }}
+    uses: ./.github/workflows/integration-tests.yml
+    with:
+      cluster_name: ${{ needs.set-cluster-name.outputs.cluster_name }}
 
   destroy-development-cluster:
     name: Destroy Development Cluster
