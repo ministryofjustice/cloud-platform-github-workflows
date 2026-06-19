@@ -26,7 +26,7 @@ on:
         type: string
 
 env:
-  CLUSTER_NAME: ${{ inputs.cluster_name || github.event.inputs.cluster_name }}
+#  CLUSTER_NAME: ${{ inputs.cluster_name || github.event.inputs.cluster_name }}
   BRANCH_NAME: ${{ inputs.branch_name || github.event.inputs.branch_name }}
   
 permissions:
