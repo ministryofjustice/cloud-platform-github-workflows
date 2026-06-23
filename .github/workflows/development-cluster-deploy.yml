@@ -179,7 +179,7 @@ jobs:
     uses: ./.github/workflows/integration-tests.yml
     secrets: inherit
     with:
-      cluster_name: ${{ needs.set-cluster-name.outputs.cluster_name }}
+      cluster_name: ${{ needs.set-cluster-name.outputs.cluster_name }} # Do not pass a branch and tests will run against container-platform-integration-tests/main. Could pass through in future
           
   destroy-development-cluster:
     name: Destroy Development Cluster

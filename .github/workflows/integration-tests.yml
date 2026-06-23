@@ -87,8 +87,6 @@ jobs:
 
          - name: Run integration tests
            run: |
-             echo "Cluster from shell: $CLUSTER_NAME"
-             env | grep CLUSTER_NAME || echo "CLUSTER_NAME not found in env"
              cd ./test
              pwd
              ginkgo -r -v --show-node-events --output-interceptor-mode=none --junit-report=report.xml -- -cluster=${{ needs.set-cluster-name.outputs.cluster_name }}
