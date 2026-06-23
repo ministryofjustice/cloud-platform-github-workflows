@@ -25,6 +25,7 @@ on:
 permissions:
   id-token: write  # This is required for requesting the JWT
   contents: read  # This is required for actions/checkout
+  checks: write # Required for integration-tests.yml: publishing test reports
 
 run-name: "${{ inputs.cluster_action }} development cluster by @${{ github.actor }}"
 
@@ -169,6 +170,17 @@ jobs:
             terraform apply -auto-approve | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster-components
 
+  run-integration-tests:
+    name: Run Integration Tests After Deploy
+    if: inputs.cluster_action == 'deploy'
+    needs:
+      - set-cluster-name
+      - deploy-development-cluster
+    uses: ./.github/workflows/integration-tests.yml
+    secrets: inherit
+    with:
+      cluster_name: ${{ needs.set-cluster-name.outputs.cluster_name }} # Do not pass a branch and it will default to container-platform-integration-tests/main. Could pass through in future
+          
   destroy-development-cluster:
     name: Destroy Development Cluster
     if: inputs.cluster_action == 'destroy' && inputs.cluster_name != 'cp-date-time'

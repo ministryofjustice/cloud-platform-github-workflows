@@ -7,11 +7,27 @@ on:
         description: "Name of the target cluster for integration test run"
         required: true
         type: string
-      branch_name:
-          description: "Name of integration tests repository branch to use"
+      tests_branch_name:
+          description: "Name of container-platform-integration-tests repository branch to use"
           required: false
           default: "main"
           type: string
+
+  workflow_call:
+    inputs:
+      cluster_name:
+        description: "Name of the target cluster for integration test run"
+        required: true
+        type: string
+      tests_branch_name:
+        description: "Name of container-platform-integration-tests repository branch to use"
+        required: false
+        default: "main"
+        type: string
+
+env:
+  CLUSTER_NAME: ${{ inputs.cluster_name || github.event.inputs.cluster_name }}
+  INTEGRATION_TESTS_BRANCH_NAME: ${{ inputs.tests_branch_name || github.event.inputs.tests_branch_name }}
 
 permissions:
   id-token: write  # This is required for requesting the JWT
@@ -41,7 +57,7 @@ jobs:
            uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
            with:
              repository: 'ministryofjustice/container-platform-integration-tests'
-             ref: ${{ inputs.branch_name }}
+             ref: ${{ env.INTEGRATION_TESTS_BRANCH_NAME }}
 
          - name: Configure AWS Credentials
            uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
@@ -68,9 +84,12 @@ jobs:
          - name: Check kube config
            run: |
             kubectl config current-context || true
+
          - name: Run integration tests
            run: |
-             cd ./test;  ginkgo -r -v --show-node-events --output-interceptor-mode=none --junit-report=report.xml -- -cluster=${{ needs.set-cluster-name.outputs.cluster_name }}
+             cd ./test
+             pwd
+             ginkgo -r -v --show-node-events --output-interceptor-mode=none --junit-report=report.xml -- -cluster=${{ needs.set-cluster-name.outputs.cluster_name }}
 
          - name: Upload test report
            uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
