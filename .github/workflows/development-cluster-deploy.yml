@@ -180,6 +180,7 @@ jobs:
     secrets: inherit
     with:
       cluster_name: ${{ needs.set-cluster-name.outputs.cluster_name }} # Do not pass a branch and it will default to container-platform-integration-tests/main. Could pass through in future
+      branch_name: "eks_addon_ebs_csi"
           
   destroy-development-cluster:
     name: Destroy Development Cluster
