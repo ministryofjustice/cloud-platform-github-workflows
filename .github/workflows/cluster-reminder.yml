@@ -45,7 +45,7 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": "PR test run:\n${{ steps.dev-cluster-reminder.outputs.message }}"
+              "text": "${{ steps.dev-cluster-reminder.outputs.message }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.CP_SLACK_WEBHOOK_URL }}
