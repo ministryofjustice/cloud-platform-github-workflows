@@ -22,7 +22,7 @@ on:
         default: "main"
         type: string
       tests_branch_name:
-        description: "Name of the branch in CP Integration Tests repo to deploy from (defaults to main)"
+        description: "Name of the branch in CP Integration Tests repo to test against (defaults to main)"
         required: false
         default: "main"
         type: string
