@@ -49,7 +49,7 @@ jobs:
           echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
           echo "Cluster Name: $CLUSTER_NAME"
 
-      - name: Show Cluster Name
+      - name: Show Cluster Name and MP Branch
         continue-on-error: true
         run: |
           {
@@ -57,6 +57,7 @@ jobs:
             echo ""
             echo "- Action: \`${{ inputs.cluster_action }}\`"
             echo "- Cluster name: \`${{ steps.set-cluster-name.outputs.cluster_name }}\`"
+            echo "- modernisation-platform-environments branch name: \`${{ inputs.branch_name }}\`"
           } >> $GITHUB_STEP_SUMMARY
 
   deploy-development-cluster:
@@ -187,7 +188,7 @@ jobs:
     if: inputs.cluster_action == 'destroy' && inputs.cluster_name != 'cp-date-time'
     runs-on: ubuntu-latest
     steps:
-        - name: Show Cluster Name
+        - name: Show Cluster Name and Workflow Inputs
           continue-on-error: true
           run: |
             {
@@ -195,8 +196,8 @@ jobs:
               echo ""
               echo "- Action: \`${{ inputs.cluster_action }}\`"
               echo "- Cluster name: \`${{ inputs.cluster_name }}\`"
+              echo "- modernisation-platform-environments branch name: \`${{ inputs.branch_name }}\`"
             } >> $GITHUB_STEP_SUMMARY
-
         - name: Checkout Repository
           uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
           with:
