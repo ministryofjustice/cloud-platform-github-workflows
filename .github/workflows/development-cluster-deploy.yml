@@ -21,6 +21,11 @@ on:
         required: false
         default: "main"
         type: string
+      tests_branch_name:
+        description: "Name of the branch in CP Integration Tests repo to deploy from (defaults to main)"
+        required: false
+        default: "main"
+        type: string
 
 permissions:
   id-token: write  # This is required for requesting the JWT
@@ -49,7 +54,7 @@ jobs:
           echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
           echo "Cluster Name: $CLUSTER_NAME"
 
-      - name: Show Cluster Name and MP Branch
+      - name: Show Cluster Name and Branch Names
         continue-on-error: true
         run: |
           {
@@ -58,6 +63,7 @@ jobs:
             echo "- Action: \`${{ inputs.cluster_action }}\`"
             echo "- Cluster name: \`${{ steps.set-cluster-name.outputs.cluster_name }}\`"
             echo "- modernisation-platform-environments branch name: \`${{ inputs.branch_name }}\`"
+            echo "- container-platform-integration-tests branch name: \`${{ inputs.tests_branch_name }}\`"
           } >> $GITHUB_STEP_SUMMARY
 
   deploy-development-cluster:
@@ -181,14 +187,14 @@ jobs:
     secrets: inherit
     with:
       cluster_name: ${{ needs.set-cluster-name.outputs.cluster_name }} # Do not pass a branch and it will default to container-platform-integration-tests/main. Could pass through in future
-      tests_branch_name: "eks_addon_ebs_csi"
+      tests_branch_name: ${{ inputs.tests_branch_name }}
           
   destroy-development-cluster:
     name: Destroy Development Cluster
     if: inputs.cluster_action == 'destroy' && inputs.cluster_name != 'cp-date-time'
     runs-on: ubuntu-latest
     steps:
-        - name: Show Cluster Name and Workflow Inputs
+        - name: Show Cluster Name and Branch Names
           continue-on-error: true
           run: |
             {
@@ -197,6 +203,7 @@ jobs:
               echo "- Action: \`${{ inputs.cluster_action }}\`"
               echo "- Cluster name: \`${{ inputs.cluster_name }}\`"
               echo "- modernisation-platform-environments branch name: \`${{ inputs.branch_name }}\`"
+              echo "- container-platform-integration-tests branch name: \`${{ inputs.tests_branch_name }}\`"
             } >> $GITHUB_STEP_SUMMARY
         - name: Checkout Repository
           uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
