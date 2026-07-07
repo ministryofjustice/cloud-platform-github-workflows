@@ -26,6 +26,11 @@ on:
         required: false
         default: "main"
         type: string
+      enable_argocd:
+        description: "Enable ArgoCD EKS Capability on this cluster (hub cluster role)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   id-token: write  # This is required for requesting the JWT
@@ -64,6 +69,7 @@ jobs:
             echo "- Cluster name: \`${{ steps.set-cluster-name.outputs.cluster_name }}\`"
             echo "- modernisation-platform-environments branch name: \`${{ inputs.branch_name }}\`"
             echo "- container-platform-integration-tests branch name: \`${{ inputs.tests_branch_name }}\`"
+            echo "- ArgoCD enabled: \`${{ inputs.enable_argocd }}\`"
           } >> $GITHUB_STEP_SUMMARY
 
   deploy-development-cluster:
@@ -110,13 +116,21 @@ jobs:
         - name: Cluster Terraform Plan
           run: |
             set -o pipefail
-            terraform plan -var=created_by=${{ github.actor }} | ../../../../scripts/redact-output.sh
+            terraform plan \
+              -var=created_by=${{ github.actor }} \
+              -var=enable_argocd=${{ inputs.enable_argocd }} \
+              -var=argocd_idc_instance_arn=${{ secrets.ARGOCD_IDC_INSTANCE_ARN }} \
+              | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster
 
         - name: Cluster Terraform Apply
           run: |
             set -o pipefail
-            terraform apply -auto-approve -var=created_by=${{ github.actor }} | ../../../../scripts/redact-output.sh
+            terraform apply -auto-approve \
+              -var=created_by=${{ github.actor }} \
+              -var=enable_argocd=${{ inputs.enable_argocd }} \
+              -var=argocd_idc_instance_arn=${{ secrets.ARGOCD_IDC_INSTANCE_ARN }} \
+              | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster
 
         - name: Cluster-core Terraform fmt
