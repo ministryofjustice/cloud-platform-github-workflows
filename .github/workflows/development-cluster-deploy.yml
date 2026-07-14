@@ -120,6 +120,7 @@ jobs:
               -var=created_by=${{ github.actor }} \
               -var=enable_argocd=${{ inputs.enable_argocd }} \
               -var=argocd_idc_instance_arn=${{ secrets.ARGOCD_IDC_INSTANCE_ARN }} \
+              -var=argocd_admin_group_id=${{ secrets.ARGOCD_ADMIN_GROUP_ID }} \
               | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster
 
@@ -130,7 +131,20 @@ jobs:
               -var=created_by=${{ github.actor }} \
               -var=enable_argocd=${{ inputs.enable_argocd }} \
               -var=argocd_idc_instance_arn=${{ secrets.ARGOCD_IDC_INSTANCE_ARN }} \
+              -var=argocd_admin_group_id=${{ secrets.ARGOCD_ADMIN_GROUP_ID }} \
               | ../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform/cluster
+
+        - name: Show ArgoCD Spoke Access Role ARN
+          if: inputs.enable_argocd == true
+          run: |
+            SPOKE_ROLE_ARN=$(terraform output -raw argocd_spoke_access_role_arn 2>/dev/null || echo "")
+            if [ -n "$SPOKE_ROLE_ARN" ]; then
+              echo "## ArgoCD Hub Outputs" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "Spoke Access Role ARN (register this in spoke cluster Access Entries):" >> $GITHUB_STEP_SUMMARY
+              echo "\`$SPOKE_ROLE_ARN\`" >> $GITHUB_STEP_SUMMARY
+            fi
           working-directory: terraform/environments/cloud-platform/cluster
 
         - name: Cluster-core Terraform fmt
