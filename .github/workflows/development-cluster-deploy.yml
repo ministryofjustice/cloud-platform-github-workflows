@@ -52,7 +52,7 @@ jobs:
         run: |
           if [[ "${{ inputs.cluster_name }}" != "cp-date-time" ]]; then
             CLUSTER_NAME="${{ inputs.cluster_name }}"
-            CLUSTER_NAME="${CLUSTER_NAME:0:12}"
+            # CLUSTER_NAME="${CLUSTER_NAME:0:12}"
           else
             CLUSTER_NAME="cp-$(date +%d%m-%H%M)"
           fi
