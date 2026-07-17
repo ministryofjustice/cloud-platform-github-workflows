@@ -45,7 +45,7 @@ jobs:
         id: set-cluster-name
         run: |
           CLUSTER_NAME="${{ inputs.cluster_name }}"
-          CLUSTER_NAME="${CLUSTER_NAME:0:12}"
+          CLUSTER_NAME="$(echo "$CLUSTER_NAME" | xargs)" # Trim Whitespace
           echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
           echo "Cluster Name: $CLUSTER_NAME"
 
