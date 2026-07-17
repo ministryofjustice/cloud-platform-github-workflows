@@ -133,6 +133,35 @@ jobs:
               | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster
 
+        - name: Cluster-base Terraform fmt
+          run: terraform fmt -check
+          working-directory: terraform/environments/cloud-platform/cluster-base
+          continue-on-error: true
+
+        - name: Cluster-base Terraform init
+          run: terraform init
+          working-directory: terraform/environments/cloud-platform/cluster-base
+
+        - name: Cluster-base Terraform workspace
+          run: terraform workspace select ${{ needs.set-cluster-name.outputs.cluster_name }} || terraform workspace new ${{ needs.set-cluster-name.outputs.cluster_name }}
+          working-directory: terraform/environments/cloud-platform/cluster-base
+
+        - name: Cluster-base Terraform validate
+          run: terraform validate -no-color
+          working-directory: terraform/environments/cloud-platform/cluster-base
+
+        - name: Cluster-base Terraform Plan
+          run: |
+            set -o pipefail
+            terraform plan | ../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform/cluster-base
+
+        - name: Cluster-base Terraform Apply
+          run: |
+            set -o pipefail
+            terraform apply -auto-approve | ../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform/cluster-base
+
         - name: Cluster-core Terraform fmt
           run: terraform fmt -check
           working-directory: terraform/environments/cloud-platform/cluster-core
