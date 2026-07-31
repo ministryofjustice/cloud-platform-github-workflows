@@ -335,6 +335,29 @@ jobs:
             terraform workspace delete ${{ inputs.cluster_name }}
           working-directory: terraform/environments/cloud-platform/cluster-core
 
+        - name: Cluster-base Terraform init
+          run: terraform init
+          working-directory: terraform/environments/cloud-platform/cluster-base
+
+        - name: Cluster-base Terraform workspace select
+          id: cluster-base-workspace-select
+          continue-on-error: true
+          run: terraform workspace select ${{ inputs.cluster_name }}
+          working-directory: terraform/environments/cloud-platform/cluster-base
+
+        - name: Cluster-base Terraform Destroy
+          if: steps.cluster-base-workspace-select.outcome == 'success'
+          run: |
+            set -o pipefail
+            terraform destroy -auto-approve | ../../../../scripts/redact-output.sh
+          working-directory: terraform/environments/cloud-platform/cluster-base
+        - name: Cluster-base Terraform workspace delete
+          if: steps.cluster-base-workspace-select.outcome == 'success'
+          run: |
+            terraform workspace select default
+            terraform workspace delete ${{ inputs.cluster_name }}
+          working-directory: terraform/environments/cloud-platform/cluster-base
+          
         - name: Cluster Terraform init
           run: terraform init
           working-directory: terraform/environments/cloud-platform/cluster
