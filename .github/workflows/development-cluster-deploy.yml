@@ -124,7 +124,6 @@ jobs:
             terraform plan \
               -var=created_by=${{ github.actor }} \
               -var=enable_argocd=${{ inputs.enable_argocd }} \
-              -var=argocd_idc_instance_arn=${{ secrets.ARGOCD_IDC_INSTANCE_ARN }} \
               -var=argocd_hub_spoke_access_role_arn=${{ inputs.argocd_hub_spoke_access_role_arn }} \
               | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster
@@ -135,7 +134,6 @@ jobs:
             terraform apply -auto-approve \
               -var=created_by=${{ github.actor }} \
               -var=enable_argocd=${{ inputs.enable_argocd }} \
-              -var=argocd_idc_instance_arn=${{ secrets.ARGOCD_IDC_INSTANCE_ARN }} \
               -var=argocd_hub_spoke_access_role_arn=${{ inputs.argocd_hub_spoke_access_role_arn }} \
               | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster
