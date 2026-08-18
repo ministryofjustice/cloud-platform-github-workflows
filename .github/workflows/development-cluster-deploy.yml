@@ -31,8 +31,8 @@ on:
         required: false
         default: false
         type: boolean
-      argocd_hub_spoke_access_role_arn:
-        description: "Hub's ArgoCD spoke-access role ARN. Set this to register an ephemeral cluster as a spoke of an ephemeral hub (copy from the hub deploy's 'ArgoCD Hub Outputs' summary). Leave blank otherwise."
+      argocd_hub_capability_role_arn:
+        description: "Hub's ArgoCD Capability role ARN. Set this to register an ephemeral cluster as a spoke of an ephemeral hub (copy from the hub deploy's 'ArgoCD Hub Outputs' summary). Leave blank otherwise."
         required: false
         default: ""
         type: string
@@ -124,7 +124,7 @@ jobs:
             terraform plan \
               -var=created_by=${{ github.actor }} \
               -var=enable_argocd=${{ inputs.enable_argocd }} \
-              -var=argocd_hub_spoke_access_role_arn=${{ inputs.argocd_hub_spoke_access_role_arn }} \
+              -var=argocd_hub_capability_role_arn=${{ inputs.argocd_hub_capability_role_arn }} \
               | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster
 
@@ -134,19 +134,19 @@ jobs:
             terraform apply -auto-approve \
               -var=created_by=${{ github.actor }} \
               -var=enable_argocd=${{ inputs.enable_argocd }} \
-              -var=argocd_hub_spoke_access_role_arn=${{ inputs.argocd_hub_spoke_access_role_arn }} \
+              -var=argocd_hub_capability_role_arn=${{ inputs.argocd_hub_capability_role_arn }} \
               | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster
 
-        - name: Show ArgoCD Spoke Access Role ARN
+        - name: Show ArgoCD Capability Role ARN
           if: inputs.enable_argocd == true
           run: |
-            SPOKE_ROLE_ARN=$(terraform output -raw argocd_spoke_access_role_arn 2>/dev/null || echo "")
-            if [ -n "$SPOKE_ROLE_ARN" ]; then
+            CAPABILITY_ROLE_ARN=$(terraform output -raw argocd_capability_role_arn 2>/dev/null || echo "")
+            if [ -n "$CAPABILITY_ROLE_ARN" ]; then
               echo "## ArgoCD Hub Outputs" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              echo "Spoke Access Role ARN (register this in spoke cluster Access Entries):" >> $GITHUB_STEP_SUMMARY
-              echo "\`$SPOKE_ROLE_ARN\`" >> $GITHUB_STEP_SUMMARY
+              echo "Capability Role ARN (register this in spoke cluster Access Entries):" >> $GITHUB_STEP_SUMMARY
+              echo "\`$CAPABILITY_ROLE_ARN\`" >> $GITHUB_STEP_SUMMARY
             fi
           working-directory: terraform/environments/cloud-platform/cluster
 
