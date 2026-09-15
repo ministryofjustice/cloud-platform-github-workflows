@@ -48,7 +48,7 @@ jobs:
   set-cluster-name:
     name: Set Cluster Name
     if: inputs.cluster_action == 'deploy'
-    runs-on: ubuntu-latest
+    runs-on: octo-production
     outputs:
       cluster_name: ${{ steps.set-cluster-name.outputs.cluster_name }}
     steps:
@@ -81,7 +81,7 @@ jobs:
     name: Deploy Development Cluster
     if: inputs.cluster_action == 'deploy'
     needs: set-cluster-name
-    runs-on: ubuntu-latest
+    runs-on: octo-production
     steps:
         - name: Checkout Repository
           uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -252,7 +252,7 @@ jobs:
   destroy-development-cluster:
     name: Destroy Development Cluster
     if: inputs.cluster_action == 'destroy' && inputs.cluster_name != 'cp-date-time'
-    runs-on: ubuntu-latest
+    runs-on: octo-production
     steps:
         - name: Show Cluster Name and Branch Names
           continue-on-error: true
