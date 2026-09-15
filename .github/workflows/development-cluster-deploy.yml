@@ -36,6 +36,11 @@ on:
         required: false
         default: ""
         type: string
+      observability_tfargs:
+        description: "Optional Terraform var flags for the cluster-components metrics collectors, e.g. '-var=enable_amp_adot=true' or '-var=enable_amp_adot=true -var=enable_cloudwatch_observability=true'. Leave blank to keep the collectors disabled. Note: AMG is deployed by the cloud-platform root component, not here, so there is no enable_amg flag."
+        required: false
+        default: ""
+        type: string
 
 permissions:
   id-token: write  # This is required for requesting the JWT
@@ -75,6 +80,7 @@ jobs:
             echo "- modernisation-platform-environments branch name: \`${{ inputs.branch_name }}\`"
             echo "- container-platform-integration-tests branch name: \`${{ inputs.tests_branch_name }}\`"
             echo "- ArgoCD enabled: \`${{ inputs.enable_argocd }}\`"
+            echo "- Observability tfargs: \`${{ inputs.observability_tfargs }}\`"
           } >> $GITHUB_STEP_SUMMARY
 
   deploy-development-cluster:
@@ -228,13 +234,13 @@ jobs:
         - name: Cluster-components Terraform Plan
           run: |
             set -o pipefail
-            terraform plan | ../../../../scripts/redact-output.sh
+            terraform plan ${{ inputs.observability_tfargs }} | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster-components
 
         - name: Cluster-components Terraform Apply
           run: |
             set -o pipefail
-            terraform apply -auto-approve | ../../../../scripts/redact-output.sh
+            terraform apply -auto-approve ${{ inputs.observability_tfargs }} | ../../../../scripts/redact-output.sh
           working-directory: terraform/environments/cloud-platform/cluster-components
 
   run-integration-tests:
