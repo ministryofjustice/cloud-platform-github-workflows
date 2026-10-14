@@ -47,6 +47,9 @@ permissions:
   contents: read  # This is required for actions/checkout
   checks: write # Required for integration-tests.yml: publishing test reports
 
+env:
+  TERRAFORM_VERSION: '1.16.5'
+
 run-name: "${{ inputs.cluster_action }} development cluster by @${{ github.actor }}"
 
 jobs:
@@ -105,7 +108,7 @@ jobs:
         - name: Setup Terraform
           uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
           with:
-            terraform_version: 1.14.3
+            terraform_version: ${{ env.TERRAFORM_VERSION }}
 
         - name: Cluster Terraform fmt
           run: terraform fmt -check
@@ -287,7 +290,7 @@ jobs:
         - name: Setup Terraform
           uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
           with:
-            terraform_version: 1.14.3
+            terraform_version: ${{ env.TERRAFORM_VERSION }}
 
         - name: Cluster-components Terraform init
           run: terraform init
