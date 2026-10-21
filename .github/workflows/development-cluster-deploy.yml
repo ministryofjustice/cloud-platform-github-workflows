@@ -48,7 +48,7 @@ permissions:
   checks: write # Required for integration-tests.yml: publishing test reports
 
 env:
-  TERRAFORM_VERSION: '1.16.5'
+  TERRAFORM_VERSION: '1.16.6'
 
 run-name: "${{ inputs.cluster_action }} development cluster by @${{ github.actor }}"
 
