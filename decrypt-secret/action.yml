@@ -1,0 +1,62 @@
+name: "Decrypt Secrets"
+description: "Decrypts a base64-encoded, GPG-encrypted JSON map of secrets and exports each key as an environment variable"
+inputs:
+  encrypted_secrets:
+    description: "Base64-encoded, GPG-encrypted JSON map (output of the get-aws-secret workflow)"
+    required: true
+  passphrase:
+    description: "Passphrase used for GPG decryption"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Decrypt secrets
+      shell: bash
+      env:
+        ENCRYPTED_SECRETS: ${{ inputs.encrypted_secrets }}
+        PASSPHRASE: ${{ inputs.passphrase }}
+      run: |
+        set -euo pipefail
+
+        mask() {
+          local value="$1"
+          [ -z "$value" ] && return 0
+          local escaped="${value//%/%25}"
+          escaped="${escaped//$'\r'/%0D}"
+          escaped="${escaped//$'\n'/%0A}"
+          echo "::add-mask::$escaped"
+          local line
+          while IFS= read -r line; do
+            [ -n "$line" ] && echo "::add-mask::$line"
+          done <<< "$value"
+          return 0
+        }
+
+        json=$(printf '%s' "$ENCRYPTED_SECRETS" | base64 --decode \
+          | gpg --decrypt --quiet --batch --pinentry-mode loopback --passphrase-file <(printf '%s' "$PASSPHRASE") --output -)
+
+        # Mask every value (and JSON string leaves within it) before writing anything
+        while IFS= read -r key; do
+          value=$(printf '%s' "$json" | jq -r --arg k "$key" '.[$k]')
+          mask "$value"
+          if leaves=$(printf '%s' "$value" | jq -r '.. | strings' 2>/dev/null); then
+            while IFS= read -r leaf; do
+              mask "$leaf"
+            done <<< "$leaves"
+          fi
+        done < <(printf '%s' "$json" | jq -r 'keys[]')
+
+        while IFS= read -r key; do
+          if [[ ! "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+            echo "::error::Invalid environment variable name in secrets map"
+            exit 1
+          fi
+          value=$(printf '%s' "$json" | jq -r --arg k "$key" '.[$k]')
+          delimiter="EOF_$(openssl rand -hex 16)"
+          {
+            echo "${key}<<${delimiter}"
+            echo "$value"
+            echo "${delimiter}"
+          } >> "$GITHUB_ENV"
+        done < <(printf '%s' "$json" | jq -r 'keys[]')
