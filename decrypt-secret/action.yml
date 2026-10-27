@@ -1,0 +1,64 @@
+name: "Decrypt Secret"
+description: "Decrypts a base64-encoded, GPG-encrypted secret and exports it as an environment variable"
+inputs:
+  encrypted_secret:
+    description: "Base64-encoded, GPG-encrypted secret (output of the get-aws-secret workflow)"
+    required: true
+  passphrase:
+    description: "Passphrase used for GPG decryption"
+    required: true
+  secret_name:
+    description: "Environment variable name to export the secret as"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Decrypt secret
+      shell: bash
+      env:
+        ENCRYPTED_SECRET: ${{ inputs.encrypted_secret }}
+        PASSPHRASE: ${{ inputs.passphrase }}
+        SECRET_NAME: ${{ inputs.secret_name }}
+      run: |
+        set -euo pipefail
+
+        if [[ ! "$SECRET_NAME" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+          echo "::error::secret_name must be a valid environment variable name"
+          exit 1
+        fi
+        if [ -z "$ENCRYPTED_SECRET" ]; then
+          echo "::error::encrypted_secret is empty - check the 'needs' wiring and that the job output was not dropped"
+          exit 1
+        fi
+        if [ -z "$PASSPHRASE" ]; then
+          echo "::error::passphrase is empty"
+          exit 1
+        fi
+
+        # The trailing "x" sentinel stops command substitution stripping trailing newlines
+        if ! value=$(printf '%s' "$ENCRYPTED_SECRET" | base64 --decode \
+          | gpg --decrypt --quiet --batch --pinentry-mode loopback --passphrase-file <(printf '%s' "$PASSPHRASE") --output - \
+          && printf x); then
+          echo "::error::Failed to decrypt secret - check the passphrase matches the one used by get-aws-secret"
+          exit 1
+        fi
+        value="${value%x}"
+
+        # Mask the whole value and each line before writing it anywhere
+        escaped="${value//%/%25}"
+        escaped="${escaped//$'\r'/%0D}"
+        escaped="${escaped//$'\n'/%0A}"
+        echo "::add-mask::$escaped"
+        while IFS= read -r line; do
+          if [ -n "$line" ]; then
+            echo "::add-mask::$line"
+          fi
+        done <<< "$value"
+
+        delimiter="EOF_$(openssl rand -hex 16)"
+        {
+          printf '%s\n' "${SECRET_NAME}<<${delimiter}"
+          printf '%s\n' "$value"
+          printf '%s\n' "${delimiter}"
+        } >> "$GITHUB_ENV"
